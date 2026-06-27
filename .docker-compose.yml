@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  client:
+    build: ./client
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+  server:
+    build: ./server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+  data-ingestion:
+    build: ./services/data-ingestion
+    ports:
+      - "5001:5001"
+  collision-prediction:
+    build: ./services/collision-prediction
+    ports:
+      - "5002:5002"
+  risk-assessment:
+    build: ./services/risk-assessment
+    ports:
+      - "5003:5003"
+  avoidance-recommendation:
+    build: ./services/avoidance-recommendation
+    ports:
+      - "5004:5004"
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
