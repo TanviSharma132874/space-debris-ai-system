@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  },
+  "scripts": {
+      "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\" \"cd services/collision-prediction && python app/main.py\" \"cd services/avoidance-recommendation && python app/main.py\""
+    }
+}

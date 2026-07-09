@@ -77,6 +77,76 @@ const validatePredictionInput = ({ primaryObject, secondaryObject }) => {
   };
 };
 
+const validatePredictionResponse = (prediction) => {
+  const warnings = [];
+  const validRiskLevels = ['Low', 'Medium', 'High', 'Critical'];
+
+  if (!prediction || typeof prediction !== 'object') {
+    return {
+      isValid: false,
+      qualityLevel: 'Invalid',
+      warnings: ['Prediction response could not be generated.'],
+    };
+  }
+
+  const altitudeDifference = Number(prediction.altitudeDifference);
+  const relativeVelocity = Number(prediction.relativeVelocity);
+
+  if (!Number.isFinite(altitudeDifference) || altitudeDifference < 0) {
+    warnings.push('Prediction response contains an invalid altitude difference.');
+  }
+
+  if (!Number.isFinite(relativeVelocity) || relativeVelocity < 0) {
+    warnings.push('Prediction response contains an invalid relative velocity.');
+  }
+
+  if (!validRiskLevels.includes(prediction.riskLevel)) {
+    warnings.push('Prediction response contains an invalid risk level.');
+  }
+
+  return {
+    isValid: warnings.length === 0,
+    qualityLevel: warnings.length === 0 ? 'Optimal' : 'Invalid',
+    warnings,
+  };
+};
+
+const validateAIPredictionResponse = (aiPrediction) => {
+  const warnings = [];
+  const validRiskLevels = ['Low', 'Medium', 'High', 'Critical'];
+
+  if (!aiPrediction || typeof aiPrediction !== 'object') {
+    return {
+      isValid: false,
+      qualityLevel: 'Invalid',
+      warnings: ['AI prediction response could not be generated.'],
+    };
+  }
+
+  const probability = Number(aiPrediction.probability);
+  const confidence = Number(aiPrediction.confidence);
+
+  if (!validRiskLevels.includes(aiPrediction.aiRiskLevel)) {
+    warnings.push('AI prediction response contains an invalid risk level.');
+  }
+
+  if (!Number.isFinite(probability) || probability < 0 || probability > 1) {
+    warnings.push('AI prediction response contains an invalid probability.');
+  }
+
+  if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    warnings.push('AI prediction response contains an invalid confidence score.');
+  }
+
+  return {
+    isValid: warnings.length === 0,
+    qualityLevel: warnings.length === 0 ? 'Optimal' : 'Invalid',
+    warnings,
+  };
+};
+
 module.exports = {
+  validateAIPredictionResponse,
   validatePredictionInput,
+  validatePredictionResponse,
 };

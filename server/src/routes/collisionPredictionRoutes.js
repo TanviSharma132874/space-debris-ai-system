@@ -15,6 +15,7 @@ const {
 } = require('../services/scenarioService');
 const CollisionEvent = require('../models/CollisionEvent');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
+const { getAuditLogs, recordMissionEvent } = require('../services/missionAuditService');
 
 const router = express.Router();
 
@@ -22,6 +23,13 @@ router.post('/predict', authMiddleware, requireRole('Admin', 'Analyst'), predict
 router.post('/simulate', authMiddleware, requireRole('Admin', 'Analyst'), simulateCollisionManeuver);
 router.get('/timeline', authMiddleware, requireRole('Admin', 'Analyst'), getPredictionTimeline);
 router.get('/analytics-summary', authMiddleware, requireRole('Admin', 'Analyst'), getAnalyticsSummary);
+router.get('/audit-logs', authMiddleware, (req, res) => {
+  return successResponse(res, 200, 'Audit logs retrieved successfully', getAuditLogs());
+});
+router.post('/audit-logs', authMiddleware, (req, res) => {
+  recordMissionEvent(req.body);
+  return successResponse(res, 201, 'Audit log recorded successfully');
+});
 
 router.get('/scenarios', authMiddleware, async (req, res) => {
   try {

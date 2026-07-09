@@ -5,7 +5,7 @@ const {
 } = require('../controllers/orbitalObjectController');
 const authMiddleware = require('../middleware/authMiddleware');
 const requireRole = require('../middleware/roleMiddleware');
-const { parseTLE } = require('../services/tleImportService');
+const { buildOrbitalObjectFromTLE, parseTLE } = require('../services/tleImportService');
 const { validateTLE } = require('../services/tleValidationService');
 const OrbitalObject = require('../models/OrbitalObject');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
@@ -26,7 +26,7 @@ router.get('/:id/trajectory', authMiddleware, async (req, res) => {
       return errorResponse(res, 404, 'Orbital object not found');
     }
 
-    const propagationResult = propagateOrbit({
+    const propagationResult = await propagateOrbit({
       orbitalObject,
       durationMinutes: parseInt(durationMinutes, 10),
       intervalMinutes: parseInt(intervalMinutes, 10),
@@ -46,12 +46,18 @@ router.post('/import-tle', authMiddleware, requireRole('Admin', 'Operator'), asy
     }
 
     const parsedSatellites = parseTLE(tleText);
+    if (parsedSatellites.length === 0) {
+      return errorResponse(res, 400, 'No valid TLE records found');
+    }
+
     let imported = 0;
+    let updated = 0;
     let skipped = 0;
     const errors = [];
     const satellites = [];
 
     for (const sat of parsedSatellites) {
+      const noradId = sat.noradId || sat.satelliteNumber;
       const validation = validateTLE(sat.tleLine1, sat.tleLine2);
       if (!validation.isValid) {
         skipped++;
@@ -59,60 +65,43 @@ router.post('/import-tle', authMiddleware, requireRole('Admin', 'Operator'), asy
         continue;
       }
 
-      // Check if catalog number already exists
-      const existing = await OrbitalObject.findOne({ catalogNumber: sat.satelliteNumber });
-      if (existing) {
-        skipped++;
-        errors.push(`Satellite "${sat.satelliteName}" (${sat.satelliteNumber}) catalog number already exists.`);
-        continue;
-      }
+      try {
+        const payload = buildOrbitalObjectFromTLE({
+          satellite: sat,
+          validation,
+          source: 'Manual Import',
+        });
 
-      // Keplerian mechanics from TLE
-      const line2 = sat.tleLine2.trim();
-      const meanMotion = parseFloat(line2.substring(52, 63).trim());
-      const inclination = parseFloat(line2.substring(8, 16).trim());
-      const eccentricity = parseFloat('.' + line2.substring(26, 33).trim());
+        const existing = await OrbitalObject.findOne({
+          $or: [
+            { noradId },
+            { catalogNumber: noradId },
+          ],
+        });
 
-      let orbitType = 'LEO';
-      let altitudeKm = 400;
-      let velocityKmPerSec = 7.7;
-
-      if (!isNaN(meanMotion)) {
-        if (meanMotion >= 11.25) orbitType = 'LEO';
-        else if (meanMotion > 1.05 && meanMotion < 11.25) orbitType = 'MEO';
-        else if (meanMotion >= 0.95 && meanMotion <= 1.05) orbitType = 'GEO';
-        else orbitType = 'HEO';
-
-        try {
-          const G_M = 398600.4418; // km^3/s^2
-          const R_E = 6378.1; // km
-          const n_rad_s = (meanMotion * 2 * Math.PI) / 86400;
-          const a = Math.pow(G_M / (n_rad_s * n_rad_s), 1/3);
-          altitudeKm = Math.round((a - R_E) * 100) / 100;
-          velocityKmPerSec = Math.round(Math.sqrt(G_M / a) * 10000) / 10000;
-        } catch (mathErr) {
-          // Keep defaults
+        if (existing) {
+          const updatePayload = { ...payload };
+          delete updatePayload.catalogNumber;
+          existing.set(updatePayload);
+          const updatedObject = await existing.save();
+          updated++;
+          satellites.push(updatedObject);
+          continue;
         }
+
+        const orbitalObject = await OrbitalObject.create(payload);
+
+        imported++;
+        satellites.push(orbitalObject);
+      } catch (dbErr) {
+        skipped++;
+        errors.push(`Failed to import satellite "${sat.satelliteName || noradId}": ${dbErr.message}`);
       }
-
-      const orbitalObject = await OrbitalObject.create({
-        name: sat.satelliteName,
-        catalogNumber: sat.satelliteNumber,
-        objectType: 'Satellite',
-        orbitType,
-        altitudeKm,
-        velocityKmPerSec,
-        inclination,
-        eccentricity,
-        status: 'Active',
-      });
-
-      imported++;
-      satellites.push(orbitalObject);
     }
 
     return successResponse(res, 201, 'TLE import completed', {
       imported,
+      updated,
       skipped,
       errors,
       satellites,
@@ -127,22 +116,32 @@ const { syncGroup } = require('../services/celestrakSyncService');
 router.post('/sync/:group', authMiddleware, requireRole('Admin', 'Operator'), async (req, res) => {
   try {
     const { group } = req.params;
-    const supportedGroups = ['active', 'stations', 'visual'];
+    const supportedGroups = ['active', 'debris', 'stations', 'visual'];
     
     if (!supportedGroups.includes(group)) {
       return errorResponse(
         res,
         400,
-        `Unsupported CelesTrak group: ${group}. Supported groups are: active, stations, visual`
+        `Unsupported CelesTrak group: ${group}. Supported groups are: active, debris, stations`
       );
     }
     
     const result = await syncGroup(group);
     return successResponse(res, 200, `CelesTrak group "${group}" synchronized successfully`, result);
   } catch (error) {
-    return errorResponse(res, 500, error.message || 'Failed to synchronize with CelesTrak');
+    console.error('CelesTrak sync failed:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data,
+    });
+
+    const message =
+      process.env.NODE_ENV === 'development' && error.message
+        ? error.message
+        : 'Failed to synchronize with CelesTrak';
+
+    return errorResponse(res, 500, message);
   }
 });
 
 module.exports = router;
-

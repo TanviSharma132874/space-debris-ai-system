@@ -1,3 +1,1038 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg-space: #00040A;
+    --color-deep-navy: #030712;
+    --color-panel: rgba(8, 13, 25, 0.88);
+    --color-glass: rgba(12, 18, 32, 0.85);
+    --color-primary: #2563EB;
+    --color-secondary: #FF8A00;
+    --color-success: #22C55E;
+    --color-warning: #F59E0B;
+    --color-danger: #EF4444;
+    --color-text-primary: #E5E7EB;
+    --color-text-secondary: #94A3B8;
+    --color-border: rgba(148, 163, 184, 0.12);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background-color: #00040A;
+    background-image:
+      linear-gradient(180deg, #00040A 0%, #030712 58%, #00040A 100%);
+    background-attachment: fixed;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    letter-spacing: -0.005em;
+    color: var(--color-text-primary);
+    font-weight: 400;
+  }
+
+  /* Custom terminal scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #00040A;
+    border-left: 1px solid rgba(148, 163, 184, 0.05);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.2);
+    border-radius: 3px;
+    box-shadow: inset 0 0 6px rgba(37, 99, 235, 0.25);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(37, 99, 235, 0.4);
+    box-shadow: inset 0 0 6px rgba(37, 99, 235, 0.5);
+  }
+}
+
+@layer components {
+  /* Reusable Classes as requested */
+  
+  /* space-card: Premium card with dark background, subtle border, hover transition and custom shadow */
+  .space-card {
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    padding: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .space-card:hover {
+    border-color: rgba(37, 99, 235, 0.25) !important;
+  }
+
+  /* mission-card */
+  .mission-card {
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    padding: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .mission-card:hover {
+    border-color: rgba(37, 99, 235, 0.25) !important;
+  }
+
+  /* glow-button */
+  .glow-button {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+    color: #F8FAFC !important;
+    font-weight: 700;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .glow-button:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45) !important;
+    filter: brightness(1.1);
+    transform: translateY(-1px) !important;
+  }
+
+  /* status-pill */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(12, 18, 32, 0.85) !important;
+    border: 1px solid rgba(148, 163, 184, 0.12) !important;
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94A3B8 !important;
+    letter-spacing: 0.1em;
+  }
+  
+  /* Sidebar Nav Item Styling */
+  .sidebar-nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94A3B8;
+    background: transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    border: 1px solid transparent;
+  }
+
+  .sidebar-nav-item:hover {
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .sidebar-nav-item-active {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+    color: #F8FAFC !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+  }
+
+  /* left glowing orange indicator */
+  .sidebar-nav-item-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 15%;
+    bottom: 15%;
+    width: 4px;
+    background: #FF8A00 !important;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 8px #FF8A00, 0 0 16px #FF8A00 !important;
+  }
+
+  /* mission-panel: NASA/ISRO control style card for heavy telemetry display */
+  .mission-panel {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+  }
+  .mission-panel::before {
+    display: none !important; /* Hide glowing top line */
+  }
+  .mission-panel:hover {
+    border-color: rgba(37, 99, 235, 0.2) !important;
+  }
+
+  /* status-active: pulsing blue/cyan active indicator */
+  .status-active {
+    position: relative;
+    padding-left: 16px;
+    color: var(--color-primary);
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+  }
+  .status-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+    box-shadow: 0 0 8px var(--color-primary);
+    animation: pulse 2s infinite;
+  }
+
+  /* status-warning: pulsing amber warning indicator */
+  .status-warning {
+    position: relative;
+    padding-left: 16px;
+    color: var(--color-warning);
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+  }
+  .status-warning::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-warning);
+    box-shadow: 0 0 8px var(--color-warning);
+    animation: pulse 2s infinite;
+  }
+
+  /* status-critical: pulsing red critical indicator */
+  .status-critical {
+    position: relative;
+    padding-left: 16px;
+    color: var(--color-danger);
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+  }
+  .status-critical::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-danger);
+    box-shadow: 0 0 8px var(--color-danger);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  /* orbit-glow: keyframes animation pulse for aerospace telemetry assets */
+  @keyframes orbitPulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.1), inset 0 0 5px rgba(37, 99, 235, 0.05);
+      border-color: rgba(37, 99, 235, 0.15);
+    }
+    50% {
+      box-shadow: 0 0 22px rgba(37, 99, 235, 0.25), inset 0 0 10px rgba(37, 99, 235, 0.1);
+      border-color: rgba(37, 99, 235, 0.3);
+    }
+  }
+  .orbit-glow {
+    animation: orbitPulse 5s infinite ease-in-out;
+  }
+
+  /* glass-panel: luxury glassmorphism panel */
+  .glass-panel {
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(12, 18, 32, 0.85) !important;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+  }
+  .glass-panel:hover {
+    border-color: rgba(37, 99, 235, 0.2) !important;
+    background-color: rgba(12, 18, 32, 0.95);
+  }
+
+  /* Core Layouts & Theme Updates */
+  
+  .tech-title {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.12em;
+  }
+
+  .telemetry-font {
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: normal !important;
+  }
+
+  .mission-content main {
+    max-width: 100rem;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .mission-content main > header {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    padding: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  @media (min-width: 640px) {
+    .mission-content main > header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .mission-content main > header h1,
+  .mission-content main > h1 {
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-primary);
+  }
+
+  .mission-content main > h1 {
+    display: none;
+  }
+
+  /* Main section panels default behavior */
+  .mission-content main > section {
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+  }
+
+  .mission-content main > section:hover {
+    border-color: rgba(37, 99, 235, 0.25) !important;
+  }
+
+  .mission-content h2 {
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+
+  .mission-content h3 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-primary);
+  }
+
+  .mission-content p {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+  }
+
+  .mission-content label {
+    margin-bottom: 6px;
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .mission-content input,
+  .mission-content select,
+  .mission-content textarea {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(0, 4, 10, 0.95);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--color-text-primary);
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  .mission-content input:focus,
+  .mission-content select:focus,
+  .mission-content textarea:focus {
+    border-color: rgba(37, 99, 235, 0.6);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  }
+
+  .mission-content textarea {
+    resize: y;
+  }
+
+  /* High Tech buttons override */
+  .mission-content button,
+  .mission-nav-button,
+  .mission-landing-button {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.02) !important;
+    padding: 8px 16px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #E5E7EB !important;
+    letter-spacing: 0.1em;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .mission-content button:hover,
+  .mission-nav-button:hover,
+  .mission-landing-button:hover {
+    border-color: rgba(37, 99, 235, 0.4) !important;
+    background-color: rgba(37, 99, 235, 0.1) !important;
+    color: #F8FAFC !important;
+  }
+
+  .mission-content button[type="submit"],
+  .mission-landing-button {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+    color: #F8FAFC !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+  }
+  
+  .mission-content button[type="submit"]:hover,
+  .mission-landing-button:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45) !important;
+    filter: brightness(1.1);
+  }
+
+  /* Aerospace telemetry table styling */
+  .mission-content table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    font-size: 12px;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+  }
+
+  .mission-content thead {
+    background-color: rgba(12, 18, 32, 0.85) !important;
+  }
+
+  .mission-content th {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 12px 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-secondary);
+    font-size: 10px;
+  }
+
+  .mission-content td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    padding: 14px 16px;
+    color: var(--color-text-primary);
+  }
+
+  .mission-content tbody tr {
+    transition: background-color 0.2s ease;
+  }
+
+  .mission-content tbody tr:hover {
+    background-color: rgba(37, 99, 235, 0.08) !important;
+  }
+
+  .mission-content tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .mission-content section:has(table) {
+    overflow-x: auto;
+  }
+
+  .mission-content [role="alert"] {
+    border-radius: 12px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    background-color: rgba(239, 68, 68, 0.05);
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-danger);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.05);
+  }
+
+  /* Modal container styling override */
+  .mission-content .fixed > form,
+  .mission-content .fixed > div {
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.98) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .mission-mobile-tab {
+    white-space: nowrap;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    padding: 8px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    transition: all 0.3s ease;
+  }
+
+  .mission-mobile-tab-active {
+    border-color: rgba(37, 99, 235, 0.25) !important;
+    background-color: rgba(37, 99, 235, 0.1) !important;
+    color: var(--color-primary);
+  }
+
+  /* Stats Card styling override */
+  .mission-stat-card {
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .mission-stat-card:hover {
+    border-color: rgba(37, 99, 235, 0.2) !important;
+  }
+
+  .mission-stat-card span,
+  .mission-module-card span {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-secondary);
+  }
+
+  .mission-stat-card strong {
+    font-family: 'Inter', sans-serif !important;
+    margin-top: 8px;
+    display: block;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--color-text-primary) !important;
+    letter-spacing: normal !important;
+  }
+
+  /* Module Card override */
+  .mission-module-card {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    padding: 24px;
+    transition: all 0.3s ease;
+  }
+  
+  .mission-module-card::before {
+    display: none !important;
+  }
+
+  .mission-module-card:hover {
+    border-color: rgba(37, 99, 235, 0.2) !important;
+    transform: scale(1.01);
+  }
+
+  .mission-module-card strong {
+    font-family: 'Inter', sans-serif !important;
+    margin-top: 8px;
+    display: block;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+    letter-spacing: normal !important;
+  }
+
+  /* Overrides for Dashboard inline classes (to avoid editing Dashboard.jsx) */
+  div[class*="border-[rgba(0,217,255,0.15)]"], 
+  section[class*="border-[rgba(0,217,255,0.15)]"] {
+    background-color: rgba(8, 13, 25, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(20px) !important;
+  }
+  div[class*="border-[rgba(0,217,255,0.15)]"]:hover,
+  section[class*="border-[rgba(0,217,255,0.15)]"]:hover {
+    border-color: rgba(37, 99, 235, 0.25) !important;
+  }
+
+  [class*="bg-[#00D9FF]/5"],
+  [class*="bg-[#1E90FF]/5"],
+  [class*="bg-[#FF8C00]/5"],
+  [class*="bg-[#FF3B5C]/5"],
+  [class*="bg-[#00FF9C]/5"] {
+    background-color: transparent !important;
+  }
+
+  .text-\[\#00D9FF\] {
+    color: #2563EB !important; /* Primary Mission Blue */
+  }
+  .text-\[\#FF8C00\] {
+    color: #FF8A00 !important; /* ISRO Orange */
+  }
+  .text-\[\#FF3B5C\] {
+    color: #EF4444 !important; /* Danger Red */
+  }
+  .text-\[\#00FF9C\] {
+    color: #22C55E !important; /* Success Green */
+  }
+
+  /* Background glows and lines override */
+  .mission-shell > div.pointer-events-none.fixed.inset-0.z-0:first-of-type {
+    background: radial-gradient(circle at 50% 30%, rgba(29, 78, 216, 0.04), transparent 50%),
+                linear-gradient(to bottom, #00040A, #030712 60%, #000000 100%) !important;
+  }
+  .mission-shell > div.pointer-events-none.fixed.inset-0.z-0:nth-of-type(2) {
+    opacity: 0.04 !important;
+  }
+  .mission-shell > div.pointer-events-none.fixed.inset-0.z-0:nth-of-type(3) {
+    opacity: 0.1 !important;
+  }
+
+  /* Earth Orbit CSS Visualization styles */
+  .earth-viz-container {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 64% 18%, rgba(37, 99, 235, 0.08), transparent 18%),
+      linear-gradient(180deg, #000000 0%, #00040A 100%) !important;
+  }
+
+  .earth-viz-stars {
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.8) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 28% 72%, rgba(255, 255, 255, 0.55) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 44% 34%, rgba(191, 219, 254, 0.75) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 71% 56%, rgba(255, 255, 255, 0.65) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 86% 24%, rgba(255, 255, 255, 0.75) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 92% 82%, rgba(255, 255, 255, 0.5) 0 1px, transparent 1.5px);
+    background-size: 260px 180px, 310px 220px, 230px 190px, 290px 240px, 340px 260px, 270px 210px;
+    opacity: 0.52;
+  }
+
+  .earth-viz-stars::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.18) 1px, transparent 0);
+    background-size: 34px 34px;
+    opacity: 0.22;
+  }
+
+  .earth-sphere {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 34% 31%, rgba(147, 197, 253, 0.34) 0 10%, transparent 22%),
+      radial-gradient(circle at 38% 42%, rgba(29, 78, 216, 0.95) 0 34%, rgba(12, 36, 91, 0.88) 53%, rgba(0, 4, 10, 0.98) 78%, #000000 100%),
+      linear-gradient(105deg, #1D4ED8 0%, #102E70 44%, #010409 78%) !important;
+    box-shadow: 
+      inset -34px -18px 36px rgba(0, 0, 0, 0.86),
+      inset 12px 8px 18px rgba(96, 165, 250, 0.28),
+      0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+  }
+
+  .earth-sphere::before {
+    content: '';
+    position: absolute;
+    inset: 12px 18px 18px 20px;
+    border-radius: 50%;
+    background:
+      radial-gradient(ellipse at 28% 34%, rgba(15, 23, 42, 0.34) 0 12%, transparent 13%),
+      radial-gradient(ellipse at 60% 28%, rgba(15, 23, 42, 0.3) 0 10%, transparent 11%),
+      radial-gradient(ellipse at 54% 62%, rgba(15, 23, 42, 0.42) 0 16%, transparent 17%),
+      radial-gradient(ellipse at 34% 70%, rgba(15, 23, 42, 0.28) 0 9%, transparent 10%);
+    opacity: 0.65;
+  }
+
+  .earth-sphere::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(102deg, transparent 0 45%, rgba(0, 0, 0, 0.72) 74%, rgba(0, 0, 0, 0.92) 100%);
+  }
+
+  .earth-atmosphere {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    border: 1px solid rgba(59, 130, 246, 0.35) !important;
+    box-shadow:
+      0 0 12px rgba(59, 130, 246, 0.35),
+      inset 0 0 16px rgba(59, 130, 246, 0.16) !important;
+  }
+
+  .orbit-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .orbit-ring span {
+    position: absolute;
+    right: 8px;
+    top: 12px;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #CBD5E1;
+    font-family: 'Inter', sans-serif;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transform: rotate(0deg);
+  }
+
+  .orbit-ring-leo {
+    width: 244px;
+    height: 92px;
+    border: 1px solid rgba(37, 99, 235, .7) !important;
+    transform: translate(-50%, -50%) rotate(-16deg);
+  }
+
+  .orbit-ring-meo {
+    width: 318px;
+    height: 126px;
+    border: 1px solid rgba(255, 138, 0, .7) !important;
+    transform: translate(-50%, -50%) rotate(18deg);
+  }
+
+  .orbit-ring-geo {
+    width: 390px;
+    height: 154px;
+    border: 1px dashed rgba(229, 231, 235, .45) !important;
+    transform: translate(-50%, -50%) rotate(-6deg);
+  }
+
+  .tracking-marker {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .tracking-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+
+  .tracking-label {
+    display: grid;
+    gap: 1px;
+    min-width: 86px;
+    padding: 5px 7px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(0, 4, 10, 0.78);
+    color: #CBD5E1;
+    line-height: 1.15;
+  }
+
+  .tracking-label strong,
+  .tracking-label small {
+    font-size: inherit;
+  }
+
+  .satellite-marker {
+    color: #E5E7EB;
+    animation: satelliteTrack 14s linear infinite;
+  }
+
+  .satellite-marker .tracking-dot {
+    background: #E5E7EB;
+    border: 1px solid #93C5FD;
+    box-shadow: 0 0 8px rgba(147, 197, 253, 0.75);
+  }
+
+  .debris-marker {
+    color: #FF8A00;
+    animation: debrisTrack 18s linear infinite;
+  }
+
+  .debris-marker .tracking-dot {
+    background: #FF8A00;
+    border: 1px solid #EF4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.76);
+  }
+
+  .orbit-telemetry {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+    padding-top: 8px;
+    color: #CBD5E1;
+  }
+
+  @keyframes satelliteTrack {
+    0% {
+      transform: translate(-50%, -50%) rotate(-16deg) rotate(0deg) translateX(122px) rotate(16deg);
+    }
+    100% {
+      transform: translate(-50%, -50%) rotate(-16deg) rotate(360deg) translateX(122px) rotate(16deg);
+    }
+  }
+
+  @keyframes debrisTrack {
+    0% {
+      transform: translate(-50%, -50%) rotate(18deg) rotate(160deg) translateX(159px) rotate(-18deg);
+    }
+    100% {
+      transform: translate(-50%, -50%) rotate(18deg) rotate(520deg) translateX(159px) rotate(-18deg);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .orbit-ring-geo {
+      width: 330px;
+      height: 132px;
+    }
+
+    .orbit-ring-meo {
+      width: 282px;
+      height: 112px;
+    }
+
+    .orbit-telemetry {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* NASA/ISRO mission density pass */
+  .space-card,
+  .mission-card,
+  .mission-panel,
+  .glass-panel,
+  .mission-stat-card,
+  .mission-module-card,
+  .mission-content main > header,
+  .mission-content main > section,
+  div[class*="border-[rgba(0,217,255,0.15)]"],
+  section[class*="border-[rgba(0,217,255,0.15)]"] {
+    border-radius: 16px !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(8, 13, 25, 0.92) !important;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+  }
+
+  .space-card:hover,
+  .mission-card:hover,
+  .mission-panel:hover,
+  .glass-panel:hover,
+  .mission-stat-card:hover,
+  .mission-module-card:hover,
+  .mission-content main > section:hover,
+  div[class*="border-[rgba(0,217,255,0.15)]"]:hover,
+  section[class*="border-[rgba(0,217,255,0.15)]"]:hover {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .mission-shell > div.pointer-events-none.fixed.inset-0.z-0:first-of-type {
+    background:
+      linear-gradient(180deg, #00040A 0%, #030712 62%, #00040A 100%) !important;
+  }
+
+  .mission-shell > div.pointer-events-none.fixed.inset-0.z-0:nth-of-type(2),
+  .mission-shell > div.pointer-events-none.fixed.inset-0.z-0:nth-of-type(3) {
+    opacity: 0.025 !important;
+  }
+
+  .mission-content main {
+    gap: 17px !important;
+  }
+
+  .mission-content main.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.05rem !important;
+  }
+
+  .mission-content main > header,
+  .mission-content main > section,
+  .space-card,
+  .mission-card,
+  .mission-panel,
+  .glass-panel,
+  .mission-module-card {
+    padding: 18px !important;
+  }
+
+  .mission-stat-card,
+  div[class*=" p-5"],
+  div[class*="p-5 "] {
+    padding: 16px !important;
+  }
+
+  div[class*=" p-6"],
+  div[class*="p-6 "],
+  section[class*=" p-6"],
+  section[class*="p-6 "] {
+    padding: 18px !important;
+  }
+
+  div[class*="gap-6"],
+  section[class*="gap-6"] {
+    gap: 1.05rem !important;
+  }
+
+  div[class*="gap-4"],
+  section[class*="gap-4"],
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    gap: 0.85rem !important;
+    margin-top: 0.85rem !important;
+  }
+
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.65rem !important;
+  }
+
+  .mission-content p,
+  .mission-content span,
+  .mission-content label,
+  .mission-content small,
+  .mission-content strong,
+  .mission-content td,
+  .mission-content th {
+    font-family: 'Inter', sans-serif !important;
+  }
+
+  .mission-content p,
+  .mission-content span,
+  .mission-content label,
+  .mission-content small {
+    font-weight: 400;
+  }
+
+  .mission-content strong,
+  .mission-content td,
+  .mission-content th {
+    font-weight: 500;
+  }
+
+  .mission-content h1,
+  .mission-content h2,
+  .mission-content h1.tech-title,
+  .mission-content h2.tech-title {
+    font-family: 'Orbitron', sans-serif !important;
+  }
+
+  .mission-content strong.tech-title {
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: 0 !important;
+  }
+
+  .mission-content h2 {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+
+  .status-pill {
+    padding: 3px 10px;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    background: rgba(8, 13, 25, 0.92) !important;
+  }
+}

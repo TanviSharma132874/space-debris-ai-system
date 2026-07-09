@@ -1,0 +1,82 @@
+{
+  "model": "RandomForestClassifier",
+  "modelPath": "services/collision-prediction/app/model.pkl",
+  "evaluationDataset": {
+    "type": "deterministic synthetic holdout using existing orbital collision features",
+    "samples": 5000,
+    "randomSeed": 20260627,
+    "features": [
+      "altitudeDifference",
+      "relativeVelocity",
+      "inclinationDifference",
+      "eccentricityDifference",
+      "orbitType",
+      "objectType"
+    ]
+  },
+  "accuracy": 0.994,
+  "precision": 0.994004,
+  "recall": 0.994,
+  "f1Score": 0.993931,
+  "rocAuc": 0.999936,
+  "confusionMatrix": {
+    "labels": [
+      "Low",
+      "Medium",
+      "High",
+      "Critical"
+    ],
+    "matrix": [
+      [
+        1096,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        3234,
+        5,
+        0
+      ],
+      [
+        0,
+        15,
+        597,
+        0
+      ],
+      [
+        0,
+        0,
+        8,
+        43
+      ]
+    ]
+  },
+  "perClass": {
+    "Low": {
+      "precision": 1.0,
+      "recall": 0.998179,
+      "f1Score": 0.999088,
+      "support": 1098
+    },
+    "Medium": {
+      "precision": 0.994771,
+      "recall": 0.998456,
+      "f1Score": 0.99661,
+      "support": 3239
+    },
+    "High": {
+      "precision": 0.978689,
+      "recall": 0.97549,
+      "f1Score": 0.977087,
+      "support": 612
+    },
+    "Critical": {
+      "precision": 1.0,
+      "recall": 0.843137,
+      "f1Score": 0.914894,
+      "support": 51
+    }
+  }
+}

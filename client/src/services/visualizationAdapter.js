@@ -26,9 +26,14 @@ const RISK_SEVERITY = {
  * @param {Object} params - The parameter object.
  * @param {Array} params.orbitalObjects - Array of all orbital objects.
  * @param {Array} params.predictions - Array of collision predictions/events.
+ * @param {Object} params.trajectoriesByObjectId - Map of object IDs to propagated trajectory points.
  * @returns {Array} List of formatted visualization nodes.
  */
-export function prepareVisualizationData({ orbitalObjects = [], predictions = [] }) {
+export function prepareVisualizationData({
+  orbitalObjects = [],
+  predictions = [],
+  trajectoriesByObjectId = {},
+}) {
   const objectRiskMap = new Map();
 
   // Helper to extract a string ID from various formats
@@ -59,21 +64,65 @@ export function prepareVisualizationData({ orbitalObjects = [], predictions = []
     });
   });
 
+  const isValidEciPosition = (eciPosition) => (
+    Array.isArray(eciPosition) &&
+    eciPosition.length >= 3 &&
+    eciPosition.slice(0, 3).every((value) => Number.isFinite(Number(value)))
+  );
+
+  const getLatestTrajectoryPoint = (obj, id) => {
+    const trajectory =
+      trajectoriesByObjectId[id] ||
+      trajectoriesByObjectId[obj.catalogNumber] ||
+      obj.digitalTwin?.latestTrajectory ||
+      obj.latestTrajectory ||
+      [];
+
+    if (!Array.isArray(trajectory) || trajectory.length === 0) {
+      return null;
+    }
+
+    return trajectory[trajectory.length - 1];
+  };
+
+  const mapEciPositionToRadarPosition = (eciPosition, fallbackDistanceFactor) => {
+    const [rawX, rawY, rawZ] = eciPosition.slice(0, 3).map(Number);
+    const magnitude = Math.sqrt((rawX * rawX) + (rawY * rawY) + (rawZ * rawZ));
+
+    if (!Number.isFinite(magnitude) || magnitude === 0) {
+      return null;
+    }
+
+    const distanceFactor = Math.min(Math.max(fallbackDistanceFactor, 0.8), 1.35);
+
+    return [
+      (rawX / magnitude) * distanceFactor,
+      (rawY / magnitude) * distanceFactor,
+      (rawZ / magnitude) * distanceFactor,
+    ];
+  };
+
   // 2. Format every orbital object for 3D visualization
   return orbitalObjects.map((obj) => {
     const id = obj._id || obj.id;
     const riskLevel = objectRiskMap.get(id) || 'Unknown';
     const color = COLOR_MAPPING[riskLevel] || COLOR_MAPPING.Unknown;
 
-    // TODO: Replace this simplified geometric mapping with real 3D Cartesian coordinates (X, Y, Z)
-    // derived from scientific orbital propagation models (e.g., SGP4 or Keplerian equations)
-    // using TLE parameters and epoch time.
     const angle = (Number(obj.catalogNumber || id?.charCodeAt(0) || 0) * 13) % 360;
     const rad = (angle * Math.PI) / 180;
     const distanceFactor = 1.1 + (Number(obj.altitudeKm ?? obj.altitude ?? 400) / 10000);
-    const x = Math.cos(rad) * distanceFactor;
-    const y = Math.sin(rad) * distanceFactor;
-    const z = Math.sin(rad * 2) * 0.3;
+    const latestTrajectoryPoint = getLatestTrajectoryPoint(obj, id);
+    const eciPosition =
+      latestTrajectoryPoint?.eciPosition ||
+      latestTrajectoryPoint?.eci_position;
+    const scientificPosition = isValidEciPosition(eciPosition)
+      ? mapEciPositionToRadarPosition(eciPosition, distanceFactor)
+      : null;
+    const position = scientificPosition || [
+      Math.cos(rad) * distanceFactor,
+      Math.sin(rad) * distanceFactor,
+      Math.sin(rad * 2) * 0.3,
+    ];
 
     return {
       id,
@@ -85,7 +134,9 @@ export function prepareVisualizationData({ orbitalObjects = [], predictions = []
       velocityKmPerSec: Number(obj.velocityKmPerSec ?? obj.velocity ?? 0),
       riskLevel,
       color,
-      position: [x, y, z],
+      position,
+      positionSource: scientificPosition ? 'Scientific SGP4' : 'Fallback Geometry',
+      trajectoryTimestamp: latestTrajectoryPoint?.timestamp,
     };
   });
 }

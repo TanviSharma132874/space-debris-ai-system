@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 /**
  * Scene3D component acts as a high-fidelity presentation layer for 3D orbital data.
@@ -12,6 +12,9 @@ export default function Scene3D({ visualizationData = [] }) {
   const [selectedNode, setSelectedNode] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const hasScientificPositions = visualizationData.some(
+    (node) => node.positionSource === 'Scientific SGP4'
+  );
 
   const handleNodeClick = (node) => {
     setSelectedNode(node);
@@ -19,13 +22,15 @@ export default function Scene3D({ visualizationData = [] }) {
 
   return (
     <div className="w-full bg-slate-950 border border-slate-800 rounded-xl p-6 shadow-2xl flex flex-col space-y-4 relative min-h-[480px]">
-      {/* 1. Scientific Integration Warning Banner */}
+      {/* 1. Position Source Banner */}
       <div className="bg-amber-950/40 border border-amber-500/20 text-amber-300 px-4 py-2.5 rounded-lg text-xs flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm">⚠️</span>
-          <span className="font-semibold">Visualization uses simplified positioning until scientific propagation (SGP4) is integrated.</span>
+          <span className="font-semibold">
+            Position source: {hasScientificPositions ? 'Scientific SGP4' : 'Fallback Geometry'}
+          </span>
         </div>
-        <span className="text-[9px] uppercase tracking-wider font-bold opacity-60">Ready for FP22</span>
+        <span className="text-[9px] uppercase tracking-wider font-bold opacity-60">ECI READY</span>
       </div>
 
       {/* Title & Stats bar */}
@@ -171,12 +176,14 @@ export default function Scene3D({ visualizationData = [] }) {
                   <span className="text-slate-400">Velocity:</span>
                   <span className="text-slate-200 font-mono">{selectedNode.velocityKmPerSec} km/s</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Position Source:</span>
+                  <span className="text-slate-200 font-mono">{selectedNode.positionSource || 'Fallback Geometry'}</span>
+                </div>
                 
-                {/* Simulated 3D Vector Output */}
+                {/* 3D Vector Output */}
                 <div className="border-t border-slate-900 pt-3 mt-2 space-y-1">
                   <p className="text-[10px] text-slate-500 font-mono uppercase">Position Vectors (X, Y, Z)</p>
-                  {/* TODO: Replace these simplified geometric/polar mock positions with actual propagated 3D vectors (X, Y, Z coordinates). */}
-                  {/* TODO: Connect this scene to the orbit propagation service to consume real-time coordinate streams. */}
                   <div className="grid grid-cols-3 gap-1 text-center font-mono text-[10px] bg-slate-950 p-2 rounded border border-slate-900 text-slate-400">
                     <div>X: {selectedNode.position[0].toFixed(4)}</div>
                     <div>Y: {selectedNode.position[1].toFixed(4)}</div>

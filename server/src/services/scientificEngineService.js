@@ -1,57 +1,67 @@
-const cp = require('child_process');
+const COLLISION_SERVICE_URL =
+  process.env.COLLISION_SERVICE_URL ||
+  process.env.SCIENTIFIC_ENGINE_URL ||
+  'http://localhost:5002';
 
-const SCIENTIFIC_ENGINE_URL = process.env.SCIENTIFIC_ENGINE_URL || 'http://localhost:5002';
+const AVOIDANCE_SERVICE_URL =
+  process.env.AVOIDANCE_SERVICE_URL || 'http://localhost:5004';
 
-/**
- * Sends a propagation request to the external Python scientific propagation service.
- * Performs a synchronous execution via a child Node process to maintain synchronous
- * compatibility with the existing route controllers without installing third-party packages.
- * 
- * @param {Object} payload - The propagation parameters including orbitalObject, duration, and interval.
- * @returns {Object} The propagation result from the Python engine, or a connection failure object.
- */
-const requestOrbitPropagation = (payload) => {
+const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
+
+const postJson = async (baseUrl, path, payload, timeoutMs = 4000) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    const url = `${SCIENTIFIC_ENGINE_URL}/propagate`;
-    const payloadStr = JSON.stringify(payload);
-
-    // Node.js script to run in the child process to perform the fetch request
-    const nodeScript = `
-      fetch(process.env.TARGET_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: process.env.PAYLOAD_DATA
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("HTTP error " + res.status);
-        return res.json();
-      })
-      .then(data => console.log(JSON.stringify({ success: true, data })))
-      .catch(err => console.log(JSON.stringify({ success: false, error: err.message })));
-    `;
-
-    // Execute the Node script synchronously, passing parameters through env vars to prevent shell escaping issues
-    const stdout = cp.execSync(`node -e ${JSON.stringify(nodeScript)}`, {
-      env: {
-        ...process.env,
-        TARGET_URL: url,
-        PAYLOAD_DATA: payloadStr,
+    const response = await fetch(`${normalizeBaseUrl(baseUrl)}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      encoding: 'utf-8',
-      timeout: 4000, // 4-second timeout
+      body: JSON.stringify(payload),
+      signal: controller.signal,
     });
 
-    const result = JSON.parse(stdout.trim());
-    if (result.success) {
-      return {
-        connected: true,
-        ...result.data,
-      };
+    if (!response.ok) {
+      throw new Error(`HTTP status code ${response.status}`);
     }
 
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const getDefaultAIPrediction = () => ({
+  aiRiskLevel: 'Low',
+  probability: 0.1,
+  confidence: 0.5,
+  importantFeatures: ['altitudeDifference', 'relativeVelocity'],
+});
+
+const requestAIPrediction = async (
+  primaryObject,
+  secondaryObject,
+  conjunctionFeatures
+) => {
+  try {
+    return await postJson(COLLISION_SERVICE_URL, '/predict-ai', {
+      primaryObject,
+      secondaryObject,
+      conjunctionFeatures,
+    });
+  } catch (error) {
+    console.error('AI prediction service failed:', error.message);
+    return getDefaultAIPrediction();
+  }
+};
+
+const requestOrbitPropagation = async (payload) => {
+  try {
+    const data = await postJson(COLLISION_SERVICE_URL, '/propagate', payload);
     return {
-      connected: false,
-      message: `Scientific propagation service unavailable: ${result.error}`,
+      connected: true,
+      ...data,
     };
   } catch (error) {
     return {
@@ -61,6 +71,54 @@ const requestOrbitPropagation = (payload) => {
   }
 };
 
+const requestAvoidanceRecommendations = async (
+  primaryObject,
+  secondaryObject,
+  initialPrediction,
+  conjunctionData
+) => {
+  try {
+    return await postJson(AVOIDANCE_SERVICE_URL, '/recommend', {
+      primaryObject,
+      secondaryObject,
+      initialPrediction,
+      conjunctionData,
+    });
+  } catch (error) {
+    console.error('AI Avoidance Recommendation service call failed:', error.message);
+
+    return {
+      recommendations: [
+        {
+          maneuver: 'No maneuver',
+          newAltitudeKm: primaryObject.altitudeKm,
+          newVelocityKmPerSec: primaryObject.velocityKmPerSec,
+          riskReduction: 'No Change',
+          initialRisk: initialPrediction.riskLevel,
+          newRisk: initialPrediction.riskLevel,
+          newAiRisk:
+            initialPrediction.aiPrediction?.aiRiskLevel ||
+            initialPrediction.riskLevel,
+          newProbability: initialPrediction.aiPrediction?.probability || 0.1,
+          newConfidence: initialPrediction.aiPrediction?.confidence || 0.5,
+          deltaV: 0,
+          fuelImpact: 0,
+          missionImpact: 'Low',
+          missionImpactDescription:
+            'Service unavailable. Current orbit configuration maintained.',
+          score: 0,
+          feasible: true,
+        },
+      ],
+      optimalManeuver: 'No maneuver',
+      explanation: `Autonomous decision engine is offline: ${error.message}. Please check system status.`,
+      currentFuelLevel: 100,
+    };
+  }
+};
+
 module.exports = {
+  requestAIPrediction,
+  requestAvoidanceRecommendations,
   requestOrbitPropagation,
 };

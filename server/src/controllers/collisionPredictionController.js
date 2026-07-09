@@ -1,4 +1,7 @@
-const { predictCollision } = require('../services/collisionPredictionService');
+const {
+  calculateCollisionProbability,
+  predictScientificCollision,
+} = require('../services/collisionPredictionService');
 const { generateRecommendation } = require('../services/decisionSupportService');
 const {
   generateRiskExplanation,
@@ -15,15 +18,17 @@ const CollisionEvent = require('../models/CollisionEvent');
 const OrbitalObject = require('../models/OrbitalObject');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { calculatePredictionConfidence } = require('../services/confidenceScoringService');
-const { validatePredictionInput } = require('../services/predictionValidationService');
+const {
+  validateAIPredictionResponse,
+  validatePredictionInput,
+  validatePredictionResponse,
+} = require('../services/predictionValidationService');
 const { prioritizeCollisionEvents } = require('../services/riskPrioritizationService');
-
-const collisionProbabilityByRiskLevel = {
-  Low: 0.1,
-  Medium: 0.4,
-  High: 0.7,
-  Critical: 0.9,
-};
+const {
+  requestAIPrediction,
+  requestAvoidanceRecommendations,
+} = require('../services/scientificEngineService');
+const { createRiskAssessment } = require('../services/riskAssessmentService');
 
 const predictCollisionRisk = async (req, res) => {
   try {
@@ -44,7 +49,35 @@ const predictCollisionRisk = async (req, res) => {
       return errorResponse(res, 404, 'One or more orbital objects were not found');
     }
 
-    const prediction = predictCollision(primaryOrbitalObject, secondaryOrbitalObject);
+    const validation = validatePredictionInput({
+      primaryObject: primaryOrbitalObject,
+      secondaryObject: secondaryOrbitalObject,
+    });
+
+    if (!validation.isValid) {
+      return errorResponse(
+        res,
+        400,
+        'Prediction input validation failed',
+        validation
+      );
+    }
+
+    const prediction = await predictScientificCollision(
+      primaryOrbitalObject,
+      secondaryOrbitalObject
+    );
+    const predictionValidation = validatePredictionResponse(prediction);
+
+    if (!predictionValidation.isValid) {
+      return errorResponse(
+        res,
+        400,
+        'Prediction response validation failed',
+        predictionValidation
+      );
+    }
+
     const recommendation = generateRecommendation(prediction.riskLevel);
     const riskExplanation = generateRiskExplanation(prediction);
     const missionImpact = generateMissionImpact(
@@ -56,21 +89,71 @@ const predictCollisionRisk = async (req, res) => {
       relativeVelocity: prediction.relativeVelocity,
       riskLevel: prediction.riskLevel,
     });
-    const validation = validatePredictionInput({
-      primaryObject: primaryOrbitalObject,
-      secondaryObject: secondaryOrbitalObject,
+    const collisionProbability = calculateCollisionProbability({
+      minimumDistanceKm: prediction.minimumDistanceKm,
+      relativeVelocityKmPerSec: prediction.relativeVelocityKmPerSec,
     });
+    const conjunctionFeatures = {
+      minimumDistanceKm: prediction.minimumDistanceKm,
+      relativeVelocityKmPerSec: prediction.relativeVelocityKmPerSec,
+      collisionProbability,
+      timeOfClosestApproach: prediction.timeOfClosestApproach,
+    };
+    const aiPrediction = await requestAIPrediction(
+      primaryOrbitalObject,
+      secondaryOrbitalObject,
+      conjunctionFeatures
+    );
+    const aiPredictionValidation = validateAIPredictionResponse(aiPrediction);
+
+    if (!aiPredictionValidation.isValid) {
+      return errorResponse(
+        res,
+        400,
+        'AI prediction response validation failed',
+        aiPredictionValidation
+      );
+    }
+
+    const avoidanceRecommendations = await requestAvoidanceRecommendations(
+      primaryOrbitalObject,
+      secondaryOrbitalObject,
+      {
+        ...prediction,
+        collisionProbability,
+        aiPrediction,
+      },
+      {
+        minimumDistanceKm: prediction.minimumDistanceKm,
+        relativeVelocityKmPerSec: prediction.relativeVelocityKmPerSec,
+        collisionProbability,
+        timeOfClosestApproach: prediction.timeOfClosestApproach,
+        riskLevel: prediction.riskLevel,
+      }
+    );
     const collisionEvent = await CollisionEvent.create({
       primaryObject,
       secondaryObject,
-      predictedTime: new Date(),
-      minimumDistanceKm: prediction.altitudeDifference,
-      relativeVelocityKmPerSec: prediction.relativeVelocity,
-      collisionProbability:
-        collisionProbabilityByRiskLevel[prediction.riskLevel] || 0.1,
+      predictedTime: prediction.timeOfClosestApproach
+        ? new Date(prediction.timeOfClosestApproach)
+        : new Date(),
+      minimumDistanceKm: prediction.minimumDistanceKm,
+      relativeVelocityKmPerSec: prediction.relativeVelocityKmPerSec,
+      collisionProbability,
       riskLevel: prediction.riskLevel,
       avoidanceRecommended: ['High', 'Critical'].includes(prediction.riskLevel),
     });
+
+    try {
+      await createRiskAssessment({
+        collisionEvent,
+        aiPrediction,
+        recommendation,
+        riskExplanation,
+      });
+    } catch (error) {
+      console.error('Risk assessment save failed:', error.message);
+    }
 
     return successResponse(
       res,
@@ -84,6 +167,8 @@ const predictCollisionRisk = async (req, res) => {
         collisionEvent,
         confidence,
         validation,
+        aiPrediction,
+        avoidanceRecommendations,
       }
     );
   } catch (error) {
@@ -128,6 +213,15 @@ const simulateCollisionManeuver = async (req, res) => {
       secondaryObject: secondaryOrbitalObject,
     });
 
+    const adjustedPrimaryObject = {
+      ...(primaryOrbitalObject.toObject ? primaryOrbitalObject.toObject() : primaryOrbitalObject),
+      altitudeKm: primaryOrbitalObject.altitudeKm + parsedAltitudeAdjustment
+    };
+    const aiPrediction = await requestAIPrediction(
+      adjustedPrimaryObject,
+      secondaryOrbitalObject
+    );
+
     return successResponse(
       res,
       200,
@@ -138,6 +232,7 @@ const simulateCollisionManeuver = async (req, res) => {
         riskExplanation,
         confidence,
         validation,
+        aiPrediction,
       }
     );
   } catch (error) {

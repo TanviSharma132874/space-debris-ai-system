@@ -16,6 +16,16 @@ const orbitalObjectSchema = new mongoose.Schema(
       trim: true,
       maxlength: [50, 'Catalog number cannot exceed 50 characters'],
     },
+    noradId: {
+      type: String,
+      trim: true,
+      maxlength: [20, 'NORAD ID cannot exceed 20 characters'],
+    },
+    internationalDesignator: {
+      type: String,
+      trim: true,
+      maxlength: [30, 'International designator cannot exceed 30 characters'],
+    },
     objectType: {
       type: String,
       required: [true, 'Object type is required'],
@@ -79,9 +89,77 @@ const orbitalObjectSchema = new mongoose.Schema(
       },
       default: 'Active',
     },
+    health: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    tle: {
+      line1: {
+        type: String,
+        trim: true,
+      },
+      line2: {
+        type: String,
+        trim: true,
+      },
+      epoch: {
+        type: String,
+        trim: true,
+      },
+      source: {
+        type: String,
+        trim: true,
+      },
+      lastUpdated: {
+        type: Date,
+      },
+    },
+    orbitalElements: {
+      eccentricity: {
+        type: Number,
+        min: [0, 'Orbital element eccentricity cannot be negative'],
+        max: [1, 'Orbital element eccentricity cannot exceed 1'],
+      },
+      raan: {
+        type: Number,
+        min: [0, 'RAAN cannot be less than 0 degrees'],
+        max: [360, 'RAAN cannot exceed 360 degrees'],
+      },
+      argumentOfPerigee: {
+        type: Number,
+        min: [0, 'Argument of perigee cannot be less than 0 degrees'],
+        max: [360, 'Argument of perigee cannot exceed 360 degrees'],
+      },
+      meanAnomaly: {
+        type: Number,
+        min: [0, 'Mean anomaly cannot be less than 0 degrees'],
+        max: [360, 'Mean anomaly cannot exceed 360 degrees'],
+      },
+      meanMotion: {
+        type: Number,
+        min: [0, 'Mean motion cannot be negative'],
+      },
+    },
+    tracking: {
+      lastPropagated: {
+        type: Date,
+      },
+      dataSource: {
+        type: String,
+        trim: true,
+      },
+    },
   },
   {
     timestamps: true,
+  }
+);
+
+orbitalObjectSchema.index(
+  { noradId: 1 },
+  {
+    unique: true,
+    sparse: true,
   }
 );
 

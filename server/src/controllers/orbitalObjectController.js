@@ -1,6 +1,9 @@
 const OrbitalObject = require('../models/OrbitalObject');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { validateTLE } = require('../services/tleValidationService');
+const { calculateSatelliteHealth } = require('../services/satelliteHealthService');
+const { detectOrbitalEvents } = require('../services/orbitalEventService');
+const { buildDigitalTwin } = require('../services/digitalTwinService');
 
 const createOrbitalObject = async (req, res) => {
   try {
@@ -69,11 +72,25 @@ const getAllOrbitalObjects = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    const objectsWithDigitalTwin = await Promise.all(
+      orbitalObjects.map(async (obj) => {
+        const health = calculateSatelliteHealth(obj);
+        const orbitalEvents = detectOrbitalEvents(obj);
+        const digitalTwin = await buildDigitalTwin(obj);
+        return {
+          ...obj,
+          health,
+          orbitalEvents,
+          digitalTwin
+        };
+      })
+    );
+
     return successResponse(
       res,
       200,
       'Orbital objects retrieved successfully',
-      orbitalObjects
+      objectsWithDigitalTwin
     );
   } catch (error) {
     return errorResponse(res, 500, 'Failed to retrieve orbital objects');

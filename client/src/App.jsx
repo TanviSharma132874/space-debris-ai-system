@@ -1,10 +1,62 @@
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import MissionLayout from './components/mission/MissionLayout';
+import { useAuth } from './context/AuthContext';
+import CollisionPrediction from './pages/CollisionPrediction';
+import Dashboard from './pages/Dashboard';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import MissionOverview from './pages/MissionOverview';
+import OrbitalObjects from './pages/OrbitalObjects';
+
 function App() {
+  const { token } = useAuth();
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>AI-Powered Space Debris Collision Prediction and Orbital Risk Management System</h1>
-      </header>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route
+          path="/mission-overview"
+          element={token ? <Navigate to="/dashboard" replace /> : <MissionOverview />}
+        />
+        <Route
+          path="/login"
+          element={token ? <Navigate to="/dashboard" replace /> : <Login />}
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <MissionLayout>
+                <Dashboard />
+              </MissionLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orbital-objects"
+          element={
+            <ProtectedRoute>
+              <MissionLayout>
+                <OrbitalObjects />
+              </MissionLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/collision-prediction"
+          element={
+            <ProtectedRoute>
+              <MissionLayout>
+                <CollisionPrediction />
+              </MissionLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to={token ? '/dashboard' : '/'} replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

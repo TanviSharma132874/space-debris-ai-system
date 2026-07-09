@@ -7,52 +7,43 @@ const riskAssessmentSchema = new mongoose.Schema(
       ref: 'CollisionEvent',
       required: [true, 'Collision event is required'],
     },
-    overallRiskScore: {
+    riskScore: {
       type: Number,
-      required: [true, 'Overall risk score is required'],
-      min: [0, 'Overall risk score cannot be less than 0'],
-      max: [100, 'Overall risk score cannot exceed 100'],
+      required: [true, 'Risk score is required'],
+      min: [0, 'Risk score cannot be less than 0'],
+      max: [100, 'Risk score cannot exceed 100'],
     },
-    probabilityScore: {
+    collisionProbability: {
       type: Number,
-      required: [true, 'Probability score is required'],
-      min: [0, 'Probability score cannot be less than 0'],
-      max: [100, 'Probability score cannot exceed 100'],
+      required: [true, 'Collision probability is required'],
+      min: [0, 'Collision probability cannot be less than 0'],
+      max: [1, 'Collision probability cannot exceed 1'],
     },
-    severityScore: {
-      type: Number,
-      required: [true, 'Severity score is required'],
-      min: [0, 'Severity score cannot be less than 0'],
-      max: [100, 'Severity score cannot exceed 100'],
-    },
-    confidenceScore: {
-      type: Number,
-      required: [true, 'Confidence score is required'],
-      min: [0, 'Confidence score cannot be less than 0'],
-      max: [100, 'Confidence score cannot exceed 100'],
-    },
-    recommendedAction: {
+    riskLevel: {
       type: String,
-      required: [true, 'Recommended action is required'],
+      required: [true, 'Risk level is required'],
       enum: {
-        values: ['Monitor', 'Increase Tracking', 'Plan Maneuver', 'Immediate Action'],
-        message:
-          'Recommended action must be Monitor, Increase Tracking, Plan Maneuver, or Immediate Action',
+        values: ['Low', 'Medium', 'High', 'Critical'],
+        message: 'Risk level must be Low, Medium, High, or Critical',
       },
     },
-    assessedBy: {
-      type: String,
-      required: [true, 'Assessment source is required'],
-      enum: {
-        values: ['System', 'AI', 'Operator'],
-        message: 'Assessment source must be System, AI, or Operator',
-      },
-      default: 'System',
+    aiConfidence: {
+      type: Number,
+      min: [0, 'AI confidence cannot be less than 0'],
+      max: [1, 'AI confidence cannot exceed 1'],
     },
-    notes: {
+    recommendation: {
       type: String,
+      required: [true, 'Recommendation is required'],
       trim: true,
-      maxlength: [2000, 'Notes cannot exceed 2000 characters'],
+    },
+    mainRiskFactors: {
+      type: [String],
+      default: undefined,
+    },
+    assessedAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   {

@@ -7,9 +7,9 @@ const { requestOrbitPropagation } = require('./scientificEngineService');
  * @param {Object} params.orbitalObject - The orbital object to propagate.
  * @param {number} params.durationMinutes - The total duration of the propagation in minutes.
  * @param {number} params.intervalMinutes - The time interval between trajectory points in minutes.
- * @returns {Object} The propagation response.
+ * @returns {Promise<Object>} The propagation response.
  */
-const propagateOrbit = ({ orbitalObject, durationMinutes = 60, intervalMinutes = 5 }) => {
+const propagateOrbit = async ({ orbitalObject, durationMinutes = 60, intervalMinutes = 5 }) => {
   const duration = Number(durationMinutes) || 60;
   const interval = Number(intervalMinutes) || 5;
 
@@ -17,20 +17,33 @@ const propagateOrbit = ({ orbitalObject, durationMinutes = 60, intervalMinutes =
     throw new Error('Orbital object is required for propagation.');
   }
 
-  // 1. Attempt to communicate with the Python scientific engine
-  const pythonResult = requestOrbitPropagation({
-    orbitalObject,
-    durationMinutes: duration,
-    intervalMinutes: interval,
-  });
+  const tleLine1 = orbitalObject.tle?.line1;
+  const tleLine2 = orbitalObject.tle?.line2;
 
-  if (pythonResult.connected) {
-    return {
-      supported: true,
-      source: 'Scientific Engine',
-      message: 'Orbit propagated using the Python scientific engine.',
-      placeholderTrajectory: pythonResult.trajectory || pythonResult.placeholderTrajectory || [],
-    };
+  // 1. Attempt to communicate with the Python scientific engine
+  if (tleLine1 && tleLine2) {
+    try {
+      const pythonResult = await requestOrbitPropagation({
+        orbitalObject: {
+          ...orbitalObject,
+          tleLine1,
+          tleLine2,
+        },
+        durationMinutes: duration,
+        intervalMinutes: interval,
+      });
+
+      if (pythonResult.connected && pythonResult.scientific) {
+        return {
+          supported: true,
+          source: 'Scientific Engine',
+          message: 'Orbit propagated using the Python scientific engine.',
+          placeholderTrajectory: pythonResult.trajectory || pythonResult.placeholderTrajectory || [],
+        };
+      }
+    } catch (error) {
+      // Keep the existing geometric fallback when scientific propagation fails.
+    }
   }
 
   // 2. Fallback: Generate a simple geometric preview trajectory
