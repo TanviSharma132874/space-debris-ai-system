@@ -7,7 +7,7 @@ const {
 } = require('../controllers/collisionPredictionController');
 const authMiddleware = require('../middleware/authMiddleware');
 const requireRole = require('../middleware/roleMiddleware');
-const { generatePredictionReport } = require('../services/reportService');
+const { generatePredictionReport, generateMissionSummaryReport } = require('../services/reportService');
 const {
   saveScenario,
   deleteScenario,
@@ -23,12 +23,21 @@ router.post('/predict', authMiddleware, requireRole('Admin', 'Analyst'), predict
 router.post('/simulate', authMiddleware, requireRole('Admin', 'Analyst'), simulateCollisionManeuver);
 router.get('/timeline', authMiddleware, requireRole('Admin', 'Analyst'), getPredictionTimeline);
 router.get('/analytics-summary', authMiddleware, requireRole('Admin', 'Analyst'), getAnalyticsSummary);
-router.get('/audit-logs', authMiddleware, (req, res) => {
-  return successResponse(res, 200, 'Audit logs retrieved successfully', getAuditLogs());
+router.get('/audit-logs', authMiddleware, async (req, res) => {
+  try {
+    const logs = await getAuditLogs();
+    return successResponse(res, 200, 'Audit logs retrieved successfully', logs);
+  } catch (error) {
+    return errorResponse(res, 500, 'Failed to retrieve audit logs');
+  }
 });
-router.post('/audit-logs', authMiddleware, (req, res) => {
-  recordMissionEvent(req.body);
-  return successResponse(res, 201, 'Audit log recorded successfully');
+router.post('/audit-logs', authMiddleware, async (req, res) => {
+  try {
+    await recordMissionEvent(req.body);
+    return successResponse(res, 201, 'Audit log recorded successfully');
+  } catch (error) {
+    return errorResponse(res, 500, 'Failed to record audit log');
+  }
 });
 
 router.get('/scenarios', authMiddleware, async (req, res) => {
@@ -75,6 +84,15 @@ router.get('/report/:id', authMiddleware, async (req, res) => {
     return successResponse(res, 200, 'Report generated successfully', report);
   } catch (error) {
     return errorResponse(res, 500, 'Failed to generate report');
+  }
+});
+
+router.get('/reports/summary', authMiddleware, async (req, res) => {
+  try {
+    const report = await generateMissionSummaryReport();
+    return successResponse(res, 200, 'Mission summary report generated successfully', report);
+  } catch (error) {
+    return errorResponse(res, 500, 'Failed to generate mission summary report');
   }
 });
 

@@ -3,19 +3,7 @@
  * Automatically intercepts operational events and stores them.
  */
 
-const fs = require('fs');
-const path = require('path');
-
-const logFilePath = path.join(__dirname, 'auditLogs.json');
-
-let auditLogs = [];
-try {
-  if (fs.existsSync(logFilePath)) {
-    auditLogs = JSON.parse(fs.readFileSync(logFilePath, 'utf8'));
-  }
-} catch (e) {
-  auditLogs = [];
-}
+const AuditLog = require('../models/AuditLog');
 
 /**
  * Records a mission audit event.
@@ -25,41 +13,47 @@ try {
  * @param {string} [event.severity] - 'Normal', 'Warning', 'High', 'Critical'.
  * @param {string} event.summary - Summary explanation of the event.
  */
-function recordMissionEvent(event) {
+async function recordMissionEvent(event) {
   if (!event || !event.eventType) return null;
 
-  const newEvent = {
-    eventType: event.eventType,
-    objectName: event.objectName || 'System',
-    timestamp: new Date().toISOString(),
-    severity: event.severity || 'Normal',
-    summary: event.summary || ''
-  };
-
-  // Add to start of array
-  auditLogs.unshift(newEvent);
-
-  // Keep max 100 entries
-  if (auditLogs.length > 100) {
-    auditLogs = auditLogs.slice(0, 100);
-  }
-
-  // Persist locally
   try {
-    fs.writeFileSync(logFilePath, JSON.stringify(auditLogs, null, 2), 'utf8');
+    const newLog = await AuditLog.create({
+      eventType: event.eventType,
+      severity: event.severity || 'Normal',
+      message: event.summary || event.message || '',
+      source: event.objectName || event.source || 'System',
+      metadata: event.metadata || {},
+      timestamp: event.timestamp ? new Date(event.timestamp) : new Date()
+    });
+    return newLog;
   } catch (err) {
-    console.error('Failed to write audit log to file', err);
+    console.error('Failed to write audit log to database', err);
+    return null;
   }
-
-  return newEvent;
 }
 
 /**
  * Returns all recorded audit logs.
- * @returns {Array} Audit logs list.
+ * @returns {Promise<Array>} Audit logs list.
  */
-function getAuditLogs() {
-  return auditLogs;
+async function getAuditLogs() {
+  try {
+    const logs = await AuditLog.find()
+      .sort({ timestamp: -1 })
+      .limit(100)
+      .lean();
+
+    return logs.map((log) => ({
+      eventType: log.eventType,
+      severity: log.severity,
+      objectName: log.source,
+      summary: log.message,
+      timestamp: log.timestamp,
+    }));
+  } catch (err) {
+    console.error('Failed to read audit logs from database', err);
+    return [];
+  }
 }
 
 // ==========================================
@@ -69,6 +63,7 @@ function getAuditLogs() {
 // 1. Collision Prediction & Recommendation Generated
 try {
   const collisionPredictionService = require('./collisionPredictionService');
+  
   const originalPredict = collisionPredictionService.predictCollision;
   if (originalPredict) {
     collisionPredictionService.predictCollision = function (prim, sec) {
@@ -94,6 +89,41 @@ try {
         const recommendationText = recMap[result.riskLevel] || recMap.Low;
 
         recordMissionEvent({
+          eventType: 'Recommendation Generated',
+          objectName: `${prim.name} / ${sec.name}`,
+          severity,
+          summary: `Decision recommendation issued: "${recommendationText}".`
+        });
+      }
+      return result;
+    };
+  }
+
+  const originalPredictScientific = collisionPredictionService.predictScientificCollision;
+  if (originalPredictScientific) {
+    collisionPredictionService.predictScientificCollision = async function (prim, sec) {
+      const result = await originalPredictScientific.apply(this, arguments);
+      if (result && prim && sec) {
+        const severityMap = { Low: 'Normal', Medium: 'Warning', High: 'High', Critical: 'Critical' };
+        const severity = severityMap[result.riskLevel] || 'Normal';
+
+        await recordMissionEvent({
+          eventType: 'Collision Prediction',
+          objectName: `${prim.name} / ${sec.name}`,
+          severity,
+          summary: `Collision risk classification completed: ${result.riskLevel}. Alt Diff: ${result.altitudeDifference} km, Rel Vel: ${result.relativeVelocity} km/s.`
+        });
+
+        // Recommendation Generated event
+        const recMap = {
+          Low: 'Continue Monitoring',
+          Medium: 'Increase Tracking Frequency',
+          High: 'Prepare Collision Avoidance Plan',
+          Critical: 'Immediate Collision Avoidance Maneuver Recommended'
+        };
+        const recommendationText = recMap[result.riskLevel] || recMap.Low;
+
+        await recordMissionEvent({
           eventType: 'Recommendation Generated',
           objectName: `${prim.name} / ${sec.name}`,
           severity,
