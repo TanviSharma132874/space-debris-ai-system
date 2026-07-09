@@ -1,6 +1,17 @@
-# 🚀 AI-Powered Space Debris Collision Prediction and Orbital Risk Management System
+# 🚀 AI-Powered Space Debris Collision Prediction & Orbital Risk Management System
 
-An end-to-end intelligent platform for **space debris monitoring, collision prediction, orbital risk assessment, mission operations, and decision support** using the **MERN Stack**, **Python Microservices**, and **Artificial Intelligence**.
+An end-to-end intelligent **Space Situational Awareness (SSA)** platform for satellite monitoring, orbital propagation, collision risk prediction, mission analysis, and AI-assisted avoidance decision support.
+
+The system combines:
+
+- 🛰️ Real orbital data from CelesTrak
+- 📡 TLE-based orbit propagation
+- 🧠 Artificial Intelligence
+- ⚠️ Collision probability estimation
+- 🚀 Avoidance maneuver recommendation
+- 📊 Mission operations analytics
+
+Built using **MERN Stack + Python Scientific Microservices + Docker**.
 
 ---
 
@@ -10,115 +21,349 @@ An end-to-end intelligent platform for **space debris monitoring, collision pred
   <img src="docs/images/architecture.png" alt="System Architecture" width="100%">
 </p>
 
-The architecture consists of:
+## Architecture Components
 
-- 🌐 React + Vite Frontend
-- 🟢 Node.js + Express Backend
-- 🐍 Python AI Microservices
-- 🍃 MongoDB Database
-- 🛰️ TLE Processing Engine
-- ⚠️ Collision Prediction Engine
-- 📊 Mission Operations Dashboard
-- 🌍 Future Scientific Orbit Propagation Interface
+- 🌐 React + Vite Mission Control Dashboard
+- 🟢 Node.js + Express API Gateway
+- 🐍 Python Scientific Microservices
+- 🍃 MongoDB Data Persistence
+- 🛰️ CelesTrak TLE Synchronization
+- 📡 SGP4 Orbit Propagation Engine
+- 🤖 AI Collision Prediction Service
+- ⚠️ Risk Assessment Engine
+- 🚀 Avoidance Recommendation Engine
+- 📊 Mission Audit & Reporting System
 
 ---
 
-# ✨ Features
+# ✨ Core Features
+
+---
 
 ## 🔐 Authentication & Security
 
 - JWT Authentication
-- Role-Based Access Control (Admin, Analyst, Operator)
+- Role-Based Access Control
+
+Roles:
+
+- Admin
+- Analyst
+- Operator
+
+Features:
+
 - Protected APIs
+- Secure mission operations access
+- Authorization middleware
 
-## 🛰️ Orbital Object Management
+---
 
-- Create Orbital Objects
-- Search & Advanced Filtering
-- Orbit Comparison Workspace
-- TLE Validation
-- Public TLE Import
-- Public CelesTrak Synchronization
-- Automatic Background Synchronization
+# 🛰️ Orbital Object Management
 
-## ☄️ Collision Prediction
+Manage and monitor satellites and debris objects.
 
-- Collision Risk Prediction
-- Maneuver Simulation
-- Mission Impact Analysis
-- Explainable AI
-- Confidence Scoring
-- Prediction Validation
-- Recommendation Engine
+Features:
 
-## 📊 Mission Operations
+- Orbital object database
+- Satellite metadata management
+- Search and filtering
+- Object comparison
+- CelesTrak synchronization
+- NORAD catalog support
+- International designator support
 
-- Mission Operations Center
-- Live Alert Center
-- Analytics Dashboard
-- Timeline View
-- Priority Queue
-- Prediction History
-- Scenario Workspace
-- Report Export
-- System Health Dashboard
+Stored orbital data:
 
-## 🌍 Scientific Layer
+- TLE Line 1
+- TLE Line 2
+- Epoch
+- Inclination
+- Eccentricity
+- RAAN
+- Argument of Perigee
+- Mean Motion
 
-- Scientific Engine Interface
-- Orbit Propagation Interface
-- Placeholder Scientific Engine
-- Ready for SGP4 Integration
+---
+
+# 📡 Scientific Orbit Propagation
+
+Real orbital mechanics integration using SGP4.
+
+Pipeline:
+
+```
+CelesTrak TLE
+        |
+        ↓
+SGP4 Propagation Engine
+        |
+        ↓
+ECI Position / Velocity Vectors
+        |
+        ↓
+Trajectory Generation
+        |
+        ↓
+Visualization + Prediction Engine
+```
+
+Generated trajectory data:
+
+- Timestamp
+- Latitude
+- Longitude
+- Altitude
+- Velocity
+- ECI Position Vector
+- ECI Velocity Vector
+
+---
+
+# ☄️ Collision Prediction Engine
+
+Scientific conjunction analysis using propagated orbital states.
+
+Process:
+
+1. Propagate primary object orbit
+2. Propagate secondary object orbit
+3. Compare ECI vectors over time
+4. Find Time of Closest Approach (TCA)
+5. Calculate:
+
+- Minimum miss distance
+- Relative velocity
+- Collision probability
+
+Output:
+
+- Risk level
+- Collision probability
+- Closest approach time
+- Mission impact
+- Confidence score
+
+Risk categories:
+
+- Low
+- Medium
+- High
+- Critical
+
+---
+
+# 🧠 AI Prediction Engine
+
+Machine learning assisted collision assessment.
+
+AI Pipeline:
+
+```
+SGP4 Conjunction Data
+
+        ↓
+
+Feature Extraction
+
+        ↓
+
+Random Forest Model
+
+        ↓
+
+AI Risk Classification
+```
+
+Features used:
+
+- Minimum distance
+- Relative velocity
+- Collision probability
+- Orbital parameters
+
+AI Output:
+
+- Risk prediction
+- Confidence score
+- Probability estimation
+- Explainability information
+
+---
+
+# 🚀 Avoidance Recommendation Engine
+
+AI-assisted maneuver planning.
+
+Uses:
+
+- Collision probability
+- Closest approach distance
+- Relative velocity
+- Time before conjunction
+
+Generates:
+
+- Recommended maneuver
+- Delta-V requirement
+- Execution timing
+- Fuel impact
+- Risk reduction estimate
+
+Example:
+
+```json
+{
+  "optimalManeuver": "Raise orbit",
+  "deltaVRequiredMs": 8.7,
+  "riskBefore": "Critical",
+  "riskAfter": "Medium"
+}
+```
+
+---
+
+# 📊 Mission Operations Center
+
+Operational dashboard features:
+
+- Collision monitoring
+- Live alerts
+- Risk analytics
+- Mission timeline
+- Prediction history
+- Decision support
+- System health monitoring
+
+---
+
+# 🧾 Mission Audit System
+
+MongoDB-based audit logging.
+
+Tracks:
+
+- Collision predictions
+- Risk assessments
+- Avoidance recommendations
+- Mission events
+
+Features:
+
+- Persistent database storage
+- Severity classification
+- Event timeline
+
+---
+
+# 📑 Mission Reports
+
+Automated mission reporting system.
+
+Reports include:
+
+- Total predictions
+- Risk statistics
+- Collision history
+- Mission summaries
+- Operational analytics
+
+API:
+
+```http
+GET /api/collision/reports/summary
+```
+
+---
+
+# 🌍 Visualization
+
+Visualization pipeline:
+
+```
+SGP4 ECI Coordinates
+        |
+        ↓
+Visualization Adapter
+        |
+        ↓
+Mission Control Interface
+```
+
+Features:
+
+- Orbit visualization
+- Object tracking
+- Collision analysis display
+- Digital Twin interface
 
 ---
 
 # 🛠️ Technology Stack
 
-### Frontend
+
+## Frontend
 
 - React
 - Vite
-- Axios
 - Tailwind CSS
+- Axios
 
-### Backend
+
+## Backend
 
 - Node.js
 - Express.js
-- JWT
 - MongoDB
 - Mongoose
+- JWT
 
-### AI & Scientific Layer
+
+## AI & Scientific Services
 
 - Python
 - Flask
-- TLE Processing
-- Orbit Propagation Interface
-- Scientific Engine Interface
+- NumPy
+- Scikit-learn
+- SGP4 Library
 
-### Database
 
-- MongoDB
+## Infrastructure
+
+- Docker
+- Docker Compose
+- Microservice Architecture
+
 
 ---
 
 # 📁 Project Structure
 
-```
+
+```text
 space-debris-ai-system
-│
+
 ├── client/
+│   └── React Mission Dashboard
+│
 ├── server/
+│   └── Express API Server
+│
 ├── services/
+│
 │   ├── collision-prediction/
+│   │       └── SGP4 + AI Engine
+│   │
 │   ├── risk-assessment/
+│   │       └── Risk Engine
+│   │
 │   ├── avoidance-recommendation/
+│   │       └── Maneuver Engine
+│   │
 │   └── data-ingestion/
+│           └── Orbital Data Service
 │
 ├── docs/
-│   └── images/
-│       └── architecture.png
 │
 └── docker-compose.yml
 ```
@@ -127,75 +372,74 @@ space-debris-ai-system
 
 # 🚀 Installation
 
-## Prerequisites
-
-- Node.js
-- npm
-- Python
-- Docker
-- Docker Compose
-- MongoDB
-
-## Clone
+## Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/space-debris-ai-system.git
+git clone <repository-url>
+
 cd space-debris-ai-system
 ```
 
-## Backend
+---
+
+# Run With Docker
+
+Recommended:
 
 ```bash
-cd server
-npm install
+docker compose up --build
 ```
 
-Create `.env`
+Services:
 
-```
-MONGO_URI=your_mongodb_connection
-JWT_SECRET=your_secret_key
+| Component | Port |
+|-|-|
+| Frontend | 5173 |
+| Backend API | 5000 |
+| Data Ingestion | 5001 |
+| Collision Prediction | 5002 |
+| Risk Assessment | 5003 |
+| Avoidance Engine | 5004 |
+| MongoDB | 27017 |
+
+---
+
+# Environment Variables
+
+Server `.env`
+
+```env
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_secret
+PORT=5000
 ```
 
 ---
 
-## Frontend
+# Current Development Status
 
-```bash
-cd client
-npm install
-npm run dev
-```
-
----
-
-## Python Services
-
-```bash
-cd services
-docker-compose up --build
-```
+| Module | Status |
+|-|-|
+| Authentication | ✅ Complete |
+| TLE Sync | ✅ Complete |
+| SGP4 Propagation | ✅ Complete |
+| Collision Engine | ✅ Complete |
+| AI Prediction | ✅ Complete |
+| Avoidance Engine | ✅ Complete |
+| Audit Logging | ✅ Complete |
+| Mission Reports API | ✅ Complete |
+| Docker Deployment | ✅ Complete |
+| Advanced 3D Visualization | 🚧 Improving |
 
 ---
 
-# 🌐 Default URLs
+# Future Enhancements
 
-| Service | URL |
-|----------|-----|
-| Frontend | http://localhost:5173 |
-| Backend | http://localhost:5000 |
-| MongoDB | mongodb://localhost:27017 |
-
----
-
-# 📌 Future Enhancements
-
-- Real SGP4 Orbit Propagation
-- React Three Fiber 3D Earth Visualization
-- AI-based Collision Prediction
-- Live Satellite Tracking
-- Space Weather Integration
-- Digital Twin Simulation
+- React Three Fiber Earth visualization
+- Space weather integration
+- Advanced covariance based Pc model
+- Real-time satellite streaming
+- Extended ML training datasets
 
 ---
 
@@ -208,3 +452,7 @@ This project is developed for academic research and educational purposes.
 # 👩‍💻 Author
 
 **Tanvi Sharma**
+
+AI-Powered Space Technology Research Project
+
+---
