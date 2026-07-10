@@ -1,11 +1,14 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import Scene3D from '../components/3d/Scene3D';
 import { prepareVisualizationData } from '../services/visualizationAdapter';
 
 /* eslint-disable react-hooks/exhaustive-deps */
 export default function CollisionPrediction() {
+  const [searchParams] = useSearchParams();
+  const view = searchParams.get('view');
+
   const [orbitalObjects, setOrbitalObjects] = useState([]);
   const [primaryObject, setPrimaryObject] = useState('');
   const [secondaryObject, setSecondaryObject] = useState('');
@@ -26,6 +29,28 @@ export default function CollisionPrediction() {
   const prevHighestPriorityIdRef = useRef(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [trajectoriesByObjectId, setTrajectoriesByObjectId] = useState({});
+
+  const [reportsSummary, setReportsSummary] = useState(null);
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
+  const [reportsError, setReportsError] = useState('');
+
+  const fetchReportsSummary = async () => {
+    setIsLoadingReports(true);
+    setReportsError('');
+    try {
+      const response = await api.get('/api/collision/reports/summary');
+      setReportsSummary(response.data.data || response.data);
+    } catch (err) {
+      console.error('Failed to fetch reports summary', err);
+      setReportsError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Failed to fetch mission summary report.',
+      );
+    } finally {
+      setIsLoadingReports(false);
+    }
+  };
 
   const fetchAuditLogs = async () => {
     try {
@@ -209,6 +234,12 @@ export default function CollisionPrediction() {
   }, []);
 
   useEffect(() => {
+    if (view === 'reports') {
+      fetchReportsSummary();
+    }
+  }, [view]);
+
+  useEffect(() => {
     if (orbitalObjects.length < 2) return;
 
     setPrimaryObject((currentPrimary) => currentPrimary || (orbitalObjects[0]._id || orbitalObjects[0].id || orbitalObjects[0].catalogNumber));
@@ -384,7 +415,122 @@ export default function CollisionPrediction() {
 
   return (
     <main className="space-y-6">
-      <section aria-label="Mission Operations Center" className="mission-panel mission-radar-surface space-y-5">
+      {view === 'reports' ? (
+        <section aria-label="Mission Reports Dashboard" className="mission-panel mission-radar-surface space-y-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="space-y-3">
+              <p className="telemetry-font text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-300">Conjunction Summary</p>
+              <h1 className="tech-title text-3xl font-black uppercase tracking-[0.2em] text-white sm:text-4xl">Mission Reports Console</h1>
+              <p className="max-w-3xl text-sm leading-6 text-slate-400">
+                Generated at <span className="font-mono text-cyan-200">{reportsSummary ? new Date(reportsSummary.generatedAt).toLocaleString() : '--'}</span>.
+              </p>
+            </div>
+          </div>
+          
+          {isLoadingReports ? (
+            <p className="text-xs text-slate-500 italic">Loading mission reports...</p>
+          ) : reportsError ? (
+            <p role="alert" className="text-xs text-rose-400 font-semibold">{reportsError}</p>
+          ) : reportsSummary ? (
+            <>
+              {/* Mission Summary Metrics */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mission-stat-card">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Total Predictions</span>
+                  <strong className="telemetry-font mt-3 block text-3xl text-cyan-200">{reportsSummary.missionSummary?.totalPredictions ?? 0}</strong>
+                  <p className="mt-2 text-xs text-slate-400">All collision predictions.</p>
+                </div>
+                <div className="mission-stat-card">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">High Risk Events</span>
+                  <strong className="telemetry-font mt-3 block text-3xl text-orange-300">{reportsSummary.missionSummary?.highRiskEvents ?? 0}</strong>
+                  <p className="mt-2 text-xs text-slate-400">Current active high risk warnings.</p>
+                </div>
+                <div className="mission-stat-card">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Critical Events</span>
+                  <strong className="telemetry-font mt-3 block text-3xl text-rose-300">{reportsSummary.missionSummary?.criticalEvents ?? 0}</strong>
+                  <p className="mt-2 text-xs text-slate-400">Current active critical risk warnings.</p>
+                </div>
+                <div className="mission-stat-card">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Avg Probability</span>
+                  <strong className="telemetry-font mt-3 block text-3xl text-indigo-200">{reportsSummary.missionSummary?.averageCollisionProbability != null ? `${(reportsSummary.missionSummary.averageCollisionProbability * 100).toFixed(4)}%` : '--'}</strong>
+                  <p className="mt-2 text-xs text-slate-400">Mean probability score.</p>
+                </div>
+              </div>
+
+              {/* Risk Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+                  <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Risk Statistics</h3>
+                  <div className="space-y-1 text-xs">
+                    <p>Critical: <span className="text-rose-400 font-bold">{reportsSummary.riskAnalytics?.riskDistribution?.Critical ?? 0}</span></p>
+                    <p>High: <span className="text-orange-400 font-bold">{reportsSummary.riskAnalytics?.riskDistribution?.High ?? 0}</span></p>
+                    <p>Medium: <span className="text-amber-400 font-bold">{reportsSummary.riskAnalytics?.riskDistribution?.Medium ?? 0}</span></p>
+                    <p>Low: <span className="text-emerald-400 font-bold">{reportsSummary.riskAnalytics?.riskDistribution?.Low ?? 0}</span></p>
+                  </div>
+                  <div className="pt-2 border-t border-slate-800/60">
+                    <p className="text-xs text-slate-400">Average AI Confidence: <span className="font-mono text-indigo-300 font-bold">{reportsSummary.riskAnalytics?.averageAiConfidence != null ? `${(reportsSummary.riskAnalytics.averageAiConfidence * 100).toFixed(2)}%` : '--'}</span></p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+                  <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Prediction Analytics</h3>
+                  <div className="space-y-1 text-xs">
+                    <p>Maneuvers Recommended: <span className="text-slate-200 font-semibold">{reportsSummary.avoidanceSummary?.maneuversRecommendedCount ?? 0}</span></p>
+                    <p>Monitored Events: <span className="text-slate-200 font-semibold">{reportsSummary.avoidanceSummary?.monitoredEventsCount ?? 0}</span></p>
+                    <p>Total Assessments: <span className="text-slate-200 font-semibold">{reportsSummary.riskAssessmentSummary?.totalAssessments ?? 0}</span></p>
+                    <p>Latest Recommendation: <span className="text-indigo-400 font-semibold">{reportsSummary.riskAssessmentSummary?.latestRecommendation || 'None'}</span></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Latest Events List */}
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
+                <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Conjunction Events Under Analysis</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-500 uppercase tracking-wider">
+                        <th className="pb-2">Primary Object</th>
+                        <th className="pb-2">Secondary Object</th>
+                        <th className="pb-2">Approach Time</th>
+                        <th className="pb-2">Min Distance (km)</th>
+                        <th className="pb-2">Rel Velocity (km/s)</th>
+                        <th className="pb-2">Risk</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-300">
+                      {reportsSummary.latestEvents?.map((event) => (
+                        <tr key={event.id} className="hover:bg-slate-800/40">
+                          <td className="py-2.5 font-semibold text-slate-200">{event.primaryObject?.name || 'Unknown'}</td>
+                          <td className="py-2.5 font-semibold text-slate-200">{event.secondaryObject?.name || 'Unknown'}</td>
+                          <td className="py-2.5 font-mono text-slate-400">{new Date(event.timeOfClosestApproach).toLocaleString()}</td>
+                          <td className="py-2.5 font-mono">{event.minimumDistanceKm != null ? `${event.minimumDistanceKm.toFixed(3)} km` : '--'}</td>
+                          <td className="py-2.5 font-mono">{event.relativeVelocityKmPerSec != null ? `${event.relativeVelocityKmPerSec.toFixed(3)} km/s` : '--'}</td>
+                          <td className="py-2.5">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              event.riskLevel === 'Low' ? 'text-emerald-400 bg-emerald-950/20' :
+                              event.riskLevel === 'Medium' ? 'text-amber-400 bg-amber-950/20' :
+                              event.riskLevel === 'High' ? 'text-orange-400 bg-orange-950/20' :
+                              'text-rose-400 bg-rose-950/20'
+                            }`}>{event.riskLevel}</span>
+                          </td>
+                        </tr>
+                      ))}
+                      {(!reportsSummary.latestEvents || reportsSummary.latestEvents.length === 0) && (
+                        <tr>
+                          <td colSpan="6" className="py-4 text-center text-slate-500 italic">No events found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </section>
+      ) : (
+        <>
+          <section aria-label="Mission Operations Center" className="mission-panel mission-radar-surface space-y-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="space-y-3">
             <p className="telemetry-font text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-300">Collision Prediction Console</p>
@@ -1220,6 +1366,8 @@ export default function CollisionPrediction() {
             </div>
           </form>
         </div>
+      )}
+        </>
       )}
     </main>
   );

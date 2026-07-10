@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import demoOrbitalObjects from '../data/demoOrbitalObjects';
 
@@ -67,6 +68,9 @@ export default function OrbitalObjects() {
   // Digital Twin State
   const [selectedTwinObject, setSelectedTwinObject] = useState(null);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = searchParams.get('view');
+
   // Fetch orbital objects with active filters
   const fetchOrbitalObjects = async (searchParams = {}) => {
     setIsLoading(true);
@@ -100,6 +104,24 @@ export default function OrbitalObjects() {
       status: filterStatus,
     });
   }, [searchText, filterObjectType, filterOrbitType, filterStatus]);
+
+  useEffect(() => {
+    if (view === 'twin' && !selectedTwinObject && orbitalObjects.length > 0) {
+      const targetObj = orbitalObjects.find((obj) => obj.digitalTwin) || orbitalObjects[0];
+      if (targetObj) {
+        setSelectedTwinObject(targetObj);
+      }
+    }
+  }, [view, orbitalObjects, selectedTwinObject]);
+
+  const handleCloseTwin = () => {
+    setSelectedTwinObject(null);
+    if (searchParams.get('view') === 'twin') {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('view');
+      setSearchParams(newParams);
+    }
+  };
 
   const handleClearFilters = () => {
     setSearchText('');
@@ -1440,7 +1462,7 @@ export default function OrbitalObjects() {
               <button
                 type="button"
                 className="text-slate-400 hover:text-slate-200 text-2xl font-bold leading-none"
-                onClick={() => setSelectedTwinObject(null)}
+                onClick={handleCloseTwin}
               >
                 &times;
               </button>
@@ -1628,7 +1650,7 @@ export default function OrbitalObjects() {
               <button
                 type="button"
                 className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-5 py-2 rounded transition-colors"
-                onClick={() => setSelectedTwinObject(null)}
+                onClick={handleCloseTwin}
               >
                 Close Digital Twin
               </button>
