@@ -6,6 +6,9 @@ const COLLISION_SERVICE_URL =
 const AVOIDANCE_SERVICE_URL =
   process.env.AVOIDANCE_SERVICE_URL || 'http://localhost:5004';
 
+const RISK_ASSESSMENT_SERVICE_URL =
+  process.env.RISK_ASSESSMENT_SERVICE_URL || 'http://localhost:5003';
+
 const normalizeBaseUrl = (url) => url.replace(/\/+$/, '');
 
 const postJson = async (baseUrl, path, payload, timeoutMs = 4000) => {
@@ -71,6 +74,10 @@ const requestOrbitPropagation = async (payload) => {
   }
 };
 
+const requestRiskAssessment = async (payload) => {
+  return postJson(RISK_ASSESSMENT_SERVICE_URL, '/assess', payload);
+};
+
 const requestAvoidanceRecommendations = async (
   primaryObject,
   secondaryObject,
@@ -121,4 +128,5 @@ module.exports = {
   requestAIPrediction,
   requestAvoidanceRecommendations,
   requestOrbitPropagation,
+  requestRiskAssessment,
 };

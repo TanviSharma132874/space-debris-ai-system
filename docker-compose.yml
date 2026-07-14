@@ -20,6 +20,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       COLLISION_SERVICE_URL: http://collision-prediction:5002
+      RISK_ASSESSMENT_SERVICE_URL: http://risk-assessment:5003
       AVOIDANCE_SERVICE_URL: http://avoidance-recommendation:5004
     depends_on:
       mongo:
