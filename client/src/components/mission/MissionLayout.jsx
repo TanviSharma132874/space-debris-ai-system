@@ -3,27 +3,45 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const navigationItems = [
-  { label: 'Mission Dashboard', path: '/dashboard', icon: 'dashboard' },
-  { label: 'Orbital Catalog', path: '/orbital-objects', icon: 'catalog' },
-  { label: 'Collision Analysis', path: '/collision-prediction', icon: 'warning' },
-  { label: 'Digital Twin', path: '/orbital-objects?view=twin', icon: 'orbit' },
-  { label: 'Reports', path: '/collision-prediction?view=reports', icon: 'report' },
-  { label: 'System', path: '/dashboard?view=system', icon: 'system' },
+  { label: 'Mission Dashboard', path: '/dashboard', icon: 'dashboard', group: 'Operations' },
+  { label: 'Orbital Catalog', path: '/orbital-objects', icon: 'catalog', group: 'Operations' },
+  { label: 'Collision Analysis', path: '/collision-prediction', icon: 'warning', group: 'Operations' },
+  { label: 'Digital Twin', path: '/orbital-objects?view=twin', icon: 'orbit', group: 'Workspace' },
+  { label: 'Reports', path: '/collision-prediction?view=reports', icon: 'report', group: 'Workspace' },
+  { label: 'System', path: '/dashboard?view=system', icon: 'system', group: 'Workspace' },
 ];
 
 const routeMeta = {
   '/dashboard': {
     title: 'Mission Control Dashboard',
-    kicker: 'Live operational overview',
+    kicker: 'Mission operations wall',
+    mission: 'Debris Watch',
   },
   '/orbital-objects': {
     title: 'Orbital Object Catalog',
     kicker: 'TLE import, satellite health, digital twins, and orbit comparison',
+    mission: 'Catalog Operations',
   },
   '/collision-prediction': {
     title: 'Collision Prediction Console',
     kicker: 'AI risk scoring, SHAP explainability, scenarios, reports, and audit trails',
+    mission: 'Conjunction Analysis',
   },
+};
+
+const groupedNavigation = navigationItems.reduce((groups, item) => {
+  const group = item.group || 'Mission';
+  return {
+    ...groups,
+    [group]: [...(groups[group] || []), item],
+  };
+}, {});
+
+const formatMissionElapsed = (seconds) => {
+  const hours = Math.floor(seconds / 3600).toString().padStart(2, '0');
+  const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+  const remainingSeconds = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${hours}:${minutes}:${remainingSeconds}`;
 };
 
 function BrandMark() {
@@ -91,18 +109,31 @@ function NavIcon({ type }) {
   );
 }
 
-function StatusPill({ tone = 'emerald', children }) {
-  const toneClass = {
-    emerald: 'text-[#E5E7EB]',
-    cyan: 'text-[#E5E7EB]',
-    slate: 'text-[#94A3B8]',
-  }[tone];
+function StatusPill({ tone = 'normal', label, children }) {
+  const toneMeta = {
+    normal: { text: 'text-[#E5E7EB]', dot: 'bg-[#22C55E]' },
+    active: { text: 'text-[#E5E7EB]', dot: 'bg-[#38BDF8]' },
+    advisory: { text: 'text-[#E5E7EB]', dot: 'bg-[#F59E0B]' },
+    muted: { text: 'text-[#94A3B8]', dot: 'bg-[#64748B]' },
+  }[tone] || { text: 'text-[#94A3B8]', dot: 'bg-[#64748B]' };
 
   return (
-    <span className={`inline-flex h-6 items-center gap-2 rounded-md border border-white/[0.08] bg-[rgba(15,23,42,0.7)] px-2.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${toneClass}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
-      {children}
+    <span className={`inline-flex h-7 items-center gap-2 rounded-md border border-white/[0.08] bg-[rgba(15,23,42,0.7)] px-2.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${toneMeta.text}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${toneMeta.dot}`} />
+      {label && <span className="text-[#64748B]">{label}</span>}
+      <span>{children}</span>
     </span>
+  );
+}
+
+function CommandMetric({ label, value, tone = 'muted' }) {
+  return (
+    <div className="hidden min-w-[112px] border-l border-white/[0.08] pl-3 md:block">
+      <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-[#64748B]">{label}</p>
+      <p className={`mt-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.08em] ${tone === 'active' ? 'text-[#38BDF8]' : 'text-[#E5E7EB]'}`}>
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -110,17 +141,22 @@ export default function MissionLayout({ children }) {
   const { pathname, search } = useLocation();
   const { user, logout } = useAuth();
   const [utcTime, setUtcTime] = useState('');
+  const [missionElapsed, setMissionElapsed] = useState(0);
 
   // Extract clean meta metadata for screen title
   const meta = routeMeta[pathname] || routeMeta['/dashboard'];
   const role = user?.role || user?.designation || 'Mission Operator';
   const name = user?.name || user?.email || 'Authenticated Crew';
+  const currentMission = meta.mission || 'Mission Operations';
+  const syncState = utcTime ? 'UTC Synced' : 'Sync Pending';
 
   // Live UTC Clock
   useEffect(() => {
+    const missionStart = Date.now();
     const updateClock = () => {
       const now = new Date();
       setUtcTime(now.toISOString().substring(11, 19));
+      setMissionElapsed(Math.floor((Date.now() - missionStart) / 1000));
     };
     updateClock();
     const interval = setInterval(updateClock, 1000);
@@ -146,25 +182,27 @@ export default function MissionLayout({ children }) {
       <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.12] [background-image:linear-gradient(rgba(56,189,248,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.05)_1px,transparent_1px)] [background-size:40px_40px]" />
 
       {/* TOP COMMAND BAR */}
-      <header className="sticky top-0 z-50 h-[58px] border-b border-[rgba(255,255,255,0.08)] bg-[#030712] px-5 flex items-center justify-between select-none shrink-0 w-full">
-        <div className="flex items-center gap-2.5">
+      <header className="sticky top-0 z-50 min-h-[62px] border-b border-[rgba(255,255,255,0.08)] bg-[#030712] px-5 py-2 flex items-center justify-between gap-4 select-none shrink-0 w-full">
+        <div className="flex min-w-0 items-center gap-2.5">
           <BrandMark />
-          <div>
+          <div className="min-w-0">
             <p className="tech-title text-[10px] font-black uppercase tracking-[0.14em] text-[#E5E7EB]">SPACE DEBRIS AI SYSTEM</p>
             <p className="text-[8px] font-medium uppercase tracking-[0.1em] text-[#94A3B8]">Mission Control Platform</p>
           </div>
         </div>
 
-        {/* Center: status pills */}
-        <div className="hidden md:flex items-center justify-center gap-2">
-          <StatusPill>AI ENGINE ONLINE</StatusPill>
-          <StatusPill>ML MODEL ACTIVE</StatusPill>
-          <StatusPill>DATABASE CONNECTED</StatusPill>
-          <StatusPill tone="cyan">UTC {utcTime || '00:00:00'}</StatusPill>
+        {/* Center: mission command state */}
+        <div className="hidden flex-1 items-center justify-center gap-2 xl:flex">
+          <CommandMetric label="Current Mission" value={currentMission} tone="active" />
+          <CommandMetric label="Active Operator" value={name} />
+          <CommandMetric label="MET" value={formatMissionElapsed(missionElapsed)} />
+          <StatusPill tone="muted" label="Notify">No Global Alerts</StatusPill>
+          <StatusPill tone={utcTime ? 'active' : 'advisory'} label="Sync">{syncState}</StatusPill>
+          <StatusPill tone="muted" label="UTC">{utcTime || '00:00:00'}</StatusPill>
         </div>
 
-        {/* Right: Admin profile card */}
-        <div className="flex items-center gap-2.5 rounded-md bg-[rgba(15,23,42,0.55)] px-2.5 py-1">
+        {/* Right: operator identity and command exit */}
+        <div className="flex shrink-0 items-center gap-2.5 rounded-md border border-white/[0.06] bg-[rgba(15,23,42,0.55)] px-2.5 py-1">
           <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-[#080D19] text-[10px] font-bold text-[#E5E7EB]">
             {(name || 'MA').slice(0, 2).toUpperCase()}
           </div>
@@ -196,38 +234,55 @@ export default function MissionLayout({ children }) {
               </div>
             </div>
 
-            <nav className="space-y-1">
-              {navigationItems.map((item) => {
-                const active = isItemActive(item);
-                return (
-                  <NavLink
-                    key={item.label}
-                    to={item.path}
-                    className={`flex items-center gap-3 border-l-[3px] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors ${
-                      active
-                        ? 'border-[#2563EB] bg-[rgba(37,99,235,0.15)] text-[#E5E7EB]'
-                        : 'border-transparent bg-transparent text-[#94A3B8] hover:bg-white/[0.05] hover:text-[#E5E7EB]'
-                    }`}
-                  >
-                    <span className={active ? 'text-[#E5E7EB]' : 'text-[#94A3B8]'}>
-                      <NavIcon type={item.icon} />
-                    </span>
-                    <span>{item.label}</span>
-                  </NavLink>
-                );
-              })}
+            <nav className="space-y-4">
+              {Object.entries(groupedNavigation).map(([group, items]) => (
+                <div key={group}>
+                  <p className="px-3 pb-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#64748B]">{group}</p>
+                  <div className="space-y-1">
+                    {items.map((item) => {
+                      const active = isItemActive(item);
+                      return (
+                        <NavLink
+                          key={item.label}
+                          to={item.path}
+                          aria-current={active ? 'page' : undefined}
+                          className={`relative flex items-center gap-3 rounded-md border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors ${
+                            active
+                              ? 'border-[#2563EB]/35 bg-[rgba(37,99,235,0.16)] text-[#E5E7EB]'
+                              : 'border-transparent bg-transparent text-[#94A3B8] hover:border-white/[0.06] hover:bg-white/[0.04] hover:text-[#E5E7EB]'
+                          }`}
+                        >
+                          {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-[#38BDF8]" />}
+                          <span className={active ? 'text-[#38BDF8]' : 'text-[#94A3B8]'}>
+                            <NavIcon type={item.icon} />
+                          </span>
+                          <span className="truncate">{item.label}</span>
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </nav>
           </div>
 
           {/* System status alert at the bottom of sidebar */}
           <div className="border-t border-white/[0.08] px-1 pt-4">
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
-              <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#E5E7EB]">SYSTEM ONLINE</span>
+            <p className="text-[8px] font-black uppercase tracking-[0.16em] text-[#64748B]">Operator Workspace</p>
+            <div className="mt-2 grid gap-2 rounded-md border border-white/[0.06] bg-[#080D19] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">Mission</span>
+                <span className="truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#E5E7EB]">{currentMission}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">Sync</span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#38BDF8]">{syncState}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">MET</span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-[#E5E7EB]">{formatMissionElapsed(missionElapsed)}</span>
+              </div>
             </div>
-            <p className="mt-1 text-[10px] font-medium text-[#94A3B8]">
-              Database connected
-            </p>
           </div>
         </aside>
 
@@ -249,8 +304,9 @@ export default function MissionLayout({ children }) {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <StatusPill tone="slate">Orbit grid online</StatusPill>
-                <StatusPill tone="slate">Telemetry sync ready</StatusPill>
+                <StatusPill tone="active" label="Mission">{currentMission}</StatusPill>
+                <StatusPill tone="muted" label="Operator">{role?.toUpperCase() || 'MISSION OPERATOR'}</StatusPill>
+                <StatusPill tone={utcTime ? 'active' : 'advisory'} label="Sync">{syncState}</StatusPill>
               </div>
 
             </div>
