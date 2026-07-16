@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import demoOrbitalObjects from '../data/demoOrbitalObjects';
+import { MissionPanel, SectionHeader, StatusBadge } from '../components/ui';
 
 export default function OrbitalObjects() {
   const [orbitalObjects, setOrbitalObjects] = useState([]);
@@ -67,6 +68,33 @@ export default function OrbitalObjects() {
 
   // Digital Twin State
   const [selectedTwinObject, setSelectedTwinObject] = useState(null);
+
+  const [selectedObject, setSelectedObject] = useState(null);
+
+  // Auto-initialize selectedObject when orbitalObjects loads
+  useEffect(() => {
+    if (orbitalObjects.length > 0 && !selectedObject) {
+      setSelectedObject(orbitalObjects[0]);
+    }
+  }, [orbitalObjects, selectedObject]);
+
+  const stats = useMemo(() => {
+    const total = orbitalObjects.length;
+    const satellites = orbitalObjects.filter(o => o.objectType === 'Satellite').length;
+    const debris = orbitalObjects.filter(o => o.objectType === 'Debris').length;
+    const rockets = orbitalObjects.filter(o => o.objectType === 'RocketBody' || o.objectType === 'Rocket Body').length;
+    
+    // Average health of satellites with health parameters
+    const satellitesWithHealth = orbitalObjects.filter(o => o.objectType === 'Satellite' && o.health);
+    const avgHealth = satellitesWithHealth.length > 0
+      ? (satellitesWithHealth.reduce((acc, curr) => acc + (curr.health.healthScore || 0), 0) / satellitesWithHealth.length).toFixed(1) + '%'
+      : '100.0% NOMINAL';
+
+    // Format a UTC sync string
+    const lastSync = total > 0 ? new Date().toISOString().replace('T', ' ').substring(0, 16) + ' UTC' : 'N/A';
+
+    return { total, satellites, debris, rockets, avgHealth, lastSync };
+  }, [orbitalObjects]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const view = searchParams.get('view');
@@ -324,79 +352,132 @@ export default function OrbitalObjects() {
 
   return (
     <main className="space-y-6">
-      <header className="mission-panel mission-radar-surface space-y-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-3">
-            <p className="telemetry-font text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-300">Orbital Catalog</p>
-            <h1 className="tech-title text-3xl font-black uppercase tracking-[0.2em] text-white sm:text-4xl">Orbital Object Registry</h1>
-            <p className="max-w-3xl text-sm leading-6 text-slate-400">
-              Manage tracked satellites, debris nodes, TLE imports, and orbital comparisons from a mission-control workspace.
-            </p>
+      <header className="mission-panel space-y-4 border border-slate-800 bg-[#020511] p-4 rounded-xl">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-900 pb-2">
+          <div>
+            <p className="telemetry-font text-[9px] font-bold uppercase tracking-[0.2em] text-cyan-400">Tactical Control Center</p>
+            <h1 className="tech-title text-xl font-black uppercase tracking-wider text-white">Orbital Catalog Registry</h1>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-            <span className="mission-chip">Live telemetry</span>
-            <span className="mission-chip">TLE ingestion</span>
-            <span className="mission-chip">Health checks</span>
-            <span className="mission-chip">Orbit compare</span>
+          <div className="flex items-center space-x-2 text-[8px] font-mono text-slate-500 uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>FDM Telemetry Connected</span>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2.5">
-          <button 
-            type="button" 
-            onClick={() => setIsFormOpen(true)}
-            className="mission-landing-button"
-          >
-            Add Object
-          </button>
-          <button
-            type="button"
-            onClick={handleLoadDemoDataset}
-            disabled={isLoadingDemo}
-            className="mission-nav-button"
-          >
-            {isLoadingDemo ? 'Synchronizing...' : 'Load Demo Set'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsImportOpen(true)}
-            className="mission-nav-button"
-          >
-            Import TLE text
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsSyncOpen(true)}
-            className="mission-nav-button"
-          >
-            CelesTrak Sync
-          </button>
+        {/* Compact Metrics Row */}
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-2.5 font-mono text-[10px] uppercase">
+          <div className="bg-slate-950 p-2 border border-slate-900/60 rounded">
+            <span className="block text-slate-500 text-[8px] tracking-wider mb-0.5">Total Objects</span>
+            <span className="text-slate-100 font-bold text-xs">{stats.total}</span>
+          </div>
+          <div className="bg-slate-950 p-2 border border-slate-900/60 rounded">
+            <span className="block text-slate-500 text-[8px] tracking-wider mb-0.5">Active Sats</span>
+            <span className="text-emerald-400 font-bold text-xs">{stats.satellites}</span>
+          </div>
+          <div className="bg-slate-950 p-2 border border-slate-900/60 rounded">
+            <span className="block text-slate-500 text-[8px] tracking-wider mb-0.5">Debris Nodes</span>
+            <span className="text-amber-500 font-bold text-xs">{stats.debris}</span>
+          </div>
+          <div className="bg-slate-950 p-2 border border-slate-900/60 rounded">
+            <span className="block text-slate-500 text-[8px] tracking-wider mb-0.5">Rocket Bodies</span>
+            <span className="text-slate-400 font-bold text-xs">{stats.rockets}</span>
+          </div>
+          <div className="bg-slate-950 p-2 border border-slate-900/60 rounded col-span-1">
+            <span className="block text-slate-500 text-[8px] tracking-wider mb-0.5">Catalog Health</span>
+            <span className="text-cyan-400 font-bold text-xs">{stats.avgHealth}</span>
+          </div>
+          <div className="bg-slate-950 p-2 border border-slate-900/60 rounded col-span-1">
+            <span className="block text-slate-500 text-[8px] tracking-wider mb-0.5">Last Sync</span>
+            <span className="text-slate-300 font-bold text-[9px] truncate block">{stats.lastSync}</span>
+          </div>
+          <div className="bg-slate-950 p-2 border border-slate-900/60 rounded col-span-1">
+            <span className="block text-slate-500 text-[8px] tracking-wider mb-0.5">Selection</span>
+            <span className="text-cyan-300 font-bold text-[9px] truncate block">{selectedObject ? selectedObject.name : 'NONE'}</span>
+          </div>
         </div>
       </header>
 
-      {/* Advanced Search & Filtering Dashboard Panel */}
-      <section aria-label="Orbital object controls" className="mission-panel my-6 space-y-4">
-        <h2 className="tech-title text-base font-extrabold uppercase tracking-[0.2em] text-cyan-300 mb-3 border-b border-slate-900/60 pb-2">Filter Telemetry Registry</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      {/* OPERATOR CONTROL CONSOLE (Toolbar & Filter Strip) */}
+      <section aria-label="Operator Control Console" className="mission-panel border border-slate-800 bg-[#020511] p-3 rounded-xl space-y-3 font-mono text-[10px]">
+        {/* Row 1: Command Actions Toolbar */}
+        <div className="flex flex-wrap gap-2 items-center justify-between border-b border-slate-900 pb-2">
+          <div className="flex items-center space-x-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-500 animate-pulse" />
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Operator Control Panel</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button 
+              type="button" 
+              onClick={() => setIsFormOpen(true)}
+              className="px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-300 font-bold hover:border-cyan-500/50 hover:text-cyan-400 transition rounded"
+            >
+              + ADD OBJECT
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsImportOpen(true)}
+              className="px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-300 font-bold hover:border-cyan-500/50 hover:text-cyan-400 transition rounded"
+            >
+              IMPORT TLE
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSyncOpen(true)}
+              className="px-2.5 py-1 bg-slate-900 border border-slate-800 text-slate-300 font-bold hover:border-cyan-500/50 hover:text-cyan-400 transition rounded"
+            >
+              CELESTRAK SYNC
+            </button>
+            <div className="h-4 w-px bg-slate-850" />
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('comparison-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-2.5 py-1 bg-indigo-950/20 border border-indigo-900/40 text-indigo-400 font-bold hover:border-indigo-400 hover:text-indigo-300 transition rounded"
+            >
+              COMPARE WORKSPACE
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                fetchOrbitalObjects({
+                  search: searchText,
+                  objectType: filterObjectType,
+                  orbitType: filterOrbitType,
+                  status: filterStatus,
+                });
+              }}
+              className="px-2.5 py-1 bg-cyan-950/20 border border-cyan-900/40 text-cyan-400 font-bold hover:border-cyan-500 hover:text-cyan-300 transition rounded flex items-center gap-1"
+            >
+              ⟳ REFRESH
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Filter Operator Strip */}
+        <div className="flex flex-wrap gap-3 items-end bg-slate-950/40 border border-slate-900/80 p-2 rounded">
           {/* Search Box */}
-          <div className="flex flex-col">
-            <label htmlFor="search-input">Search Registry</label>
+          <div className="flex flex-col min-w-[150px] flex-1">
+            <label htmlFor="search-input" className="text-[8px] text-slate-500 tracking-wider mb-0.5 uppercase">Search Registry</label>
             <input
               id="search-input"
               type="search"
-              placeholder="Filter by name or NORAD ID..."
+              placeholder="Name or NORAD ID..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
+              className="bg-slate-950 border border-slate-850 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-cyan-500/50 font-mono text-[10px]"
             />
           </div>
 
           {/* Object Type Filter */}
-          <div className="flex flex-col">
-            <label htmlFor="object-type-select">Object Category</label>
+          <div className="flex flex-col min-w-[120px]">
+            <label htmlFor="object-type-select" className="text-[8px] text-slate-500 tracking-wider mb-0.5 uppercase">Category</label>
             <select
               id="object-type-select"
               value={filterObjectType}
               onChange={(e) => setFilterObjectType(e.target.value)}
+              className="bg-slate-950 border border-slate-850 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-cyan-500/50 font-mono text-[10px]"
             >
               <option value="All">All Categories</option>
               <option value="Satellite">Active Satellite</option>
@@ -407,12 +488,13 @@ export default function OrbitalObjects() {
           </div>
 
           {/* Orbit Type Filter */}
-          <div className="flex flex-col">
-            <label htmlFor="orbit-type-select">Orbital Regime</label>
+          <div className="flex flex-col min-w-[120px]">
+            <label htmlFor="orbit-type-select" className="text-[8px] text-slate-500 tracking-wider mb-0.5 uppercase">Regime</label>
             <select
               id="orbit-type-select"
               value={filterOrbitType}
               onChange={(e) => setFilterOrbitType(e.target.value)}
+              className="bg-slate-950 border border-slate-850 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-cyan-500/50 font-mono text-[10px]"
             >
               <option value="All">All Regimes</option>
               <option value="LEO">LEO (Low Earth)</option>
@@ -423,12 +505,13 @@ export default function OrbitalObjects() {
           </div>
 
           {/* Status Filter */}
-          <div className="flex flex-col">
-            <label htmlFor="status-select">Operational Integrity</label>
+          <div className="flex flex-col min-w-[120px]">
+            <label htmlFor="status-select" className="text-[8px] text-slate-500 tracking-wider mb-0.5 uppercase">Operational Status</label>
             <select
               id="status-select"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
+              className="bg-slate-950 border border-slate-850 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-cyan-500/50 font-mono text-[10px]"
             >
               <option value="All">All Statuses</option>
               <option value="Active">Operational</option>
@@ -436,15 +519,14 @@ export default function OrbitalObjects() {
               <option value="Decayed">Decayed / Reentered</option>
             </select>
           </div>
-        </div>
 
-        <div className="flex justify-end pt-3 border-t border-slate-900/60">
+          {/* Reset Filters */}
           <button
             type="button"
             onClick={handleClearFilters}
-            className="bg-slate-900 border border-slate-800 text-slate-400 text-xs px-4 py-2 hover:text-slate-200"
+            className="px-3 py-1 bg-slate-900 border border-slate-850 text-slate-500 hover:text-slate-300 transition rounded text-[9px] font-bold tracking-wider"
           >
-            Reset Catalog Filters
+            RESET FILTERS
           </button>
         </div>
       </section>
@@ -618,91 +700,259 @@ export default function OrbitalObjects() {
       {demoError && <p role="alert" className="rounded-lg border border-rose-500/30 bg-rose-950/20 px-4 py-3 text-xs font-semibold text-rose-300">{demoError}</p>}
 
       {orbitalObjects.length > 0 && (
-        <div className="mission-panel">
-          <h2 className="tech-title text-base font-extrabold uppercase tracking-widest text-cyan-300 mb-4">Tracking Registry Catalog ({orbitalObjects.length} Nodes)</h2>
-          <div className="overflow-x-auto">
-            <table>
-              <thead>
-                <tr>
-                  <th>Object Name</th>
-                  <th>Catalog #</th>
-                  <th>Category</th>
-                  <th>Regime</th>
-                  <th>Altitude Height</th>
-                  <th>Velocity Speed</th>
-                  <th>Operational Status</th>
-                  <th>Telemetry Health</th>
-                  <th className="text-right">Tactical Workspace Actions</th>
-                </tr>
-              </thead>
-              <tbody className="telemetry-font font-semibold text-xs">
-                {orbitalObjects.map((orbitalObject) => (
-                  <tr key={orbitalObject._id || orbitalObject.id || orbitalObject.catalogNumber} className="hover:bg-cyan-950/15">
-                <td>{orbitalObject.name}</td>
-                <td>{orbitalObject.catalogNumber}</td>
-                <td>{orbitalObject.objectType}</td>
-                <td>{orbitalObject.orbitType}</td>
-                <td>{orbitalObject.altitudeKm ?? orbitalObject.altitude} km</td>
-                <td>{orbitalObject.velocityKmPerSec ?? orbitalObject.velocity} km/s</td>
-                <td>{orbitalObject.status}</td>
-                <td>
-                  {orbitalObject.objectType === 'Satellite' && orbitalObject.health ? (
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      orbitalObject.health.healthScore >= 80 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                      orbitalObject.health.healthScore >= 50 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                      'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                    }`}>
-                      {orbitalObject.health.healthScore}%
-                    </span>
-                  ) : (
-                    <span className="text-slate-500">--</span>
-                  )}
-                </td>
-                <td className="text-right">
-                  <div className="flex items-center justify-end gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handlePreviewTrajectory(orbitalObject)}
-                      className="px-2 py-1 bg-indigo-950/20 border border-indigo-500/20 hover:border-indigo-400 text-indigo-300 text-[10px] font-bold rounded transition-all hover:scale-[1.03]"
-                    >
-                      PROJECTIONS
-                    </button>
-                    {orbitalObject.objectType === 'Satellite' && orbitalObject.health && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedHealthObject(orbitalObject)}
-                        className="px-2 py-1 bg-emerald-950/20 border border-emerald-500/20 hover:border-emerald-400 text-emerald-300 text-[10px] font-bold rounded transition-all hover:scale-[1.03]"
-                      >
-                        HEALTH
-                      </button>
-                    )}
-                    {orbitalObject.orbitalEvents && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedEventObject(orbitalObject)}
-                        className="px-2 py-1 bg-amber-950/20 border border-amber-500/20 hover:border-amber-400 text-amber-300 text-[10px] font-bold rounded transition-all hover:scale-[1.03]"
-                      >
-                        EVENTS
-                      </button>
-                    )}
-                    {orbitalObject.digitalTwin && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTwinObject(orbitalObject)}
-                        className="px-2 py-1 bg-cyan-950/20 border border-cyan-500/20 hover:border-cyan-400 text-cyan-300 text-[10px] font-bold rounded transition-all hover:scale-[1.03]"
-                      >
-                        TWIN
-                      </button>
-                    )}
+        (() => {
+          const activeObject = selectedObject || orbitalObjects[0];
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: Table */}
+              <div className="lg:col-span-2 mission-panel flex flex-col space-y-3">
+                <h2 className="tech-title text-base font-extrabold uppercase tracking-widest text-cyan-300 mb-2">Tracking Registry Catalog ({orbitalObjects.length} Nodes)</h2>
+                <div className="overflow-x-auto max-h-[600px] overflow-y-auto border border-slate-900 bg-slate-950/40 rounded">
+                  <table className="w-full text-left border-collapse font-mono text-[10px]">
+                    <thead className="sticky top-0 bg-slate-950 z-20 border-b border-slate-800 uppercase text-slate-400 text-[8px] tracking-wider">
+                      <tr>
+                        <th className="p-2 font-bold">Object Name</th>
+                        <th className="p-2 font-bold">Catalog #</th>
+                        <th className="p-2 font-bold">Category</th>
+                        <th className="p-2 font-bold">Regime</th>
+                        <th className="p-2 font-bold text-right">Altitude</th>
+                        <th className="p-2 font-bold text-right">Velocity</th>
+                        <th className="p-2 font-bold text-center">Status</th>
+                        <th className="p-2 font-bold text-center">Health</th>
+                        <th className="p-2 font-bold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-900 text-slate-300">
+                      {orbitalObjects.map((orbitalObject) => {
+                        const isSelected = activeObject?._id === orbitalObject._id || activeObject?.id === orbitalObject.id;
+                        const isSatellite = orbitalObject.objectType === 'Satellite';
+                        
+                        return (
+                          <tr 
+                            key={orbitalObject._id || orbitalObject.id || orbitalObject.catalogNumber}
+                            onClick={() => setSelectedObject(orbitalObject)}
+                            className={`cursor-pointer transition-colors duration-150 ${
+                              isSelected 
+                                ? 'bg-cyan-950/30 text-cyan-200 border-l-2 border-cyan-400' 
+                                : 'hover:bg-slate-900/60'
+                            }`}
+                          >
+                            <td className="p-2 font-bold text-white max-w-[120px] truncate">{orbitalObject.name}</td>
+                            <td className="p-2 font-mono text-[9px] text-slate-400">{orbitalObject.catalogNumber}</td>
+                            <td className="p-2">
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${
+                                orbitalObject.objectType === 'Satellite' ? 'bg-emerald-950/20 text-emerald-400 border-emerald-900/30' :
+                                orbitalObject.objectType === 'Debris' ? 'bg-amber-950/20 text-amber-500 border-amber-900/30' :
+                                'bg-slate-900/40 text-slate-400 border-slate-800'
+                              }`}>
+                                {orbitalObject.objectType}
+                              </span>
+                            </td>
+                            <td className="p-2 text-indigo-300 font-semibold">{orbitalObject.orbitType}</td>
+                            <td className="p-2 text-right font-mono">{Number(orbitalObject.altitudeKm ?? orbitalObject.altitude ?? 0).toFixed(0)} km</td>
+                            <td className="p-2 text-right font-mono">{Number(orbitalObject.velocityKmPerSec ?? orbitalObject.velocity ?? 0).toFixed(2)} km/s</td>
+                            <td className="p-2 text-center">
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${
+                                orbitalObject.status === 'Active' ? 'bg-emerald-950/30 text-emerald-400 border-emerald-900/40' :
+                                orbitalObject.status === 'Inactive' ? 'bg-amber-950/30 text-amber-400 border-amber-900/40' :
+                                'bg-rose-950/30 text-rose-400 border-rose-900/40'
+                              }`}>
+                                {orbitalObject.status || 'Unknown'}
+                              </span>
+                            </td>
+                            <td className="p-2 text-center">
+                              {isSatellite && orbitalObject.health ? (
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border ${
+                                  orbitalObject.health.healthScore >= 80 ? 'bg-emerald-950/30 text-emerald-400 border-emerald-900/40' :
+                                  orbitalObject.health.healthScore >= 50 ? 'bg-amber-950/30 text-amber-400 border-amber-950/40' :
+                                  'bg-rose-950/30 text-rose-400 border-rose-900/40'
+                                }`}>
+                                  {orbitalObject.health.healthScore}%
+                                </span>
+                              ) : (
+                                <span className="text-slate-600">--</span>
+                              )}
+                            </td>
+                            <td className="p-2 text-right" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handlePreviewTrajectory(orbitalObject)}
+                                  className="px-1.5 py-0.5 bg-indigo-950/20 border border-indigo-500/20 hover:border-indigo-400 text-indigo-300 text-[8px] font-bold rounded transition-all"
+                                >
+                                  PROJ
+                                </button>
+                                {isSatellite && orbitalObject.health && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedHealthObject(orbitalObject)}
+                                    className="px-1.5 py-0.5 bg-emerald-950/20 border border-emerald-500/20 hover:border-emerald-400 text-emerald-300 text-[8px] font-bold rounded transition-all"
+                                  >
+                                    HLTH
+                                  </button>
+                                )}
+                                {orbitalObject.orbitalEvents && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedEventObject(orbitalObject)}
+                                    className="px-1.5 py-0.5 bg-amber-950/20 border border-amber-500/20 hover:border-amber-400 text-amber-300 text-[8px] font-bold rounded transition-all"
+                                  >
+                                    EVT
+                                  </button>
+                                )}
+                                {orbitalObject.digitalTwin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedTwinObject(orbitalObject)}
+                                    className="px-1.5 py-0.5 bg-cyan-950/20 border border-cyan-500/20 hover:border-cyan-400 text-cyan-300 text-[8px] font-bold rounded transition-all"
+                                  >
+                                    TWN
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Right Column: Object Details Panel */}
+              <div className="lg:col-span-1">
+                <section className="mission-panel border border-slate-800 bg-[#020511] p-4 rounded-xl flex flex-col space-y-4 font-mono text-[10px] text-slate-300">
+                  <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+                    <h2 className="tech-title text-[9px] font-black uppercase tracking-widest text-cyan-400">Object Intelligence dossier</h2>
+                    <span className="text-[7px] text-slate-500 font-bold bg-slate-950 border border-slate-900 px-1.5 py-0.5 rounded uppercase">SYSTEM DIRECTORY</span>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )}
+
+                  {activeObject ? (
+                    <div className="space-y-4 overflow-y-auto pr-1 max-h-[580px]">
+                      {/* 1. Basic Information */}
+                      <div className="bg-slate-950 p-2.5 rounded border border-slate-900/60 space-y-1.5 shadow-inner">
+                        <div className="text-[8px] text-slate-500 uppercase tracking-wider font-bold">1. Basic Information</div>
+                        <div className="font-bold text-white text-[11px] truncate">{activeObject.name}</div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-slate-900/60 pt-2 text-[9px]">
+                          <div className="flex justify-between"><span className="text-slate-500">NORAD ID:</span> <span className="text-slate-200 font-bold">{activeObject.catalogNumber}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">STATUS:</span> <span className="text-slate-200 font-bold">{activeObject.status}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">CLASS:</span> <span className="text-slate-200 font-bold">{activeObject.objectType}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">REGIME:</span> <span className="text-indigo-400 font-semibold">{activeObject.orbitType}</span></div>
+                        </div>
+                      </div>
+
+                      {/* 2. Orbital Parameters */}
+                      <div className="bg-slate-950 p-2.5 rounded border border-slate-900/60 space-y-2 shadow-inner">
+                        <div className="text-[8px] text-slate-500 uppercase tracking-wider font-bold">2. Orbital Parameters</div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[9px]">
+                          <div className="flex justify-between"><span className="text-slate-500">ALTITUDE:</span> <span className="text-slate-200 font-bold">{activeObject.altitudeKm ?? activeObject.altitude} km</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">VELOCITY:</span> <span className="text-slate-200 font-bold">{activeObject.velocityKmPerSec ?? activeObject.velocity} km/s</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">INC:</span> <span className="text-slate-200 font-bold">{activeObject.inclination ?? '--'}°</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">ECC:</span> <span className="text-slate-200 font-bold">{activeObject.eccentricity ?? '--'}</span></div>
+                        </div>
+                      </div>
+
+                      {/* 3. Subsystem Health */}
+                      <div className="bg-slate-950 p-2.5 rounded border border-slate-900/60 space-y-2 shadow-inner">
+                        <div className="text-[8px] text-slate-500 uppercase tracking-wider font-bold">3. Subsystem Health</div>
+                        {isSatellite && activeObject.health ? (
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center text-[9px]">
+                              <span className="text-slate-500">HEALTH SCORE:</span>
+                              <span className={`font-bold ${
+                                activeObject.health.healthScore >= 80 ? 'text-emerald-400' :
+                                activeObject.health.healthScore >= 50 ? 'text-amber-400' : 'text-rose-400'
+                              }`}>{activeObject.health.healthScore}% ({activeObject.health.operationalStatus})</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-[9px] pt-2 border-t border-slate-900/40">
+                              <div className="flex justify-between"><span>HYDRAZINE:</span> <span className="text-slate-300 font-bold">{activeObject.health.fuelLevel}%</span></div>
+                              <div className="flex justify-between"><span>BATTERY:</span> <span className="text-slate-300 font-bold">{activeObject.health.batteryStatus}</span></div>
+                              <div className="flex justify-between"><span>RF COMMS:</span> <span className="text-slate-300 font-bold">{activeObject.health.communicationStatus}</span></div>
+                              <div className="flex justify-between"><span>THERMAL:</span> <span className="text-slate-300 font-bold">{activeObject.health.thermalStatus}</span></div>
+                            </div>
+                            {activeObject.health.warnings && activeObject.health.warnings.length > 0 && (
+                              <div className="border-t border-slate-900/40 pt-1.5 text-[8px] text-rose-400 space-y-1">
+                                <span className="font-bold text-[8px] text-rose-500 block uppercase">Warnings:</span>
+                                {activeObject.health.warnings.map((w, i) => <div key={i}>• {w}</div>)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-slate-500 italic text-[9px] py-1">PASSIVE OBJECT // NO ACTIVE RF TRANSMITTERS OR SYSTEMS</div>
+                        )}
+                      </div>
+
+                      {/* 4. Current Mission */}
+                      <div className="bg-slate-950 p-2.5 rounded border border-slate-900/60 space-y-1.5 shadow-inner">
+                        <div className="text-[8px] text-slate-500 uppercase tracking-wider font-bold">4. Current Mission</div>
+                        {activeObject.digitalTwin ? (
+                          <div className="space-y-1.5 text-[9px]">
+                            <div className="flex justify-between"><span>MISSION PHASE:</span><span className="text-cyan-400 font-bold">{activeObject.digitalTwin.missionStatus || 'NOMINAL TRACKING'}</span></div>
+                            <div className="flex justify-between"><span>OPERATOR:</span><span className="text-slate-300 truncate max-w-[120px] font-bold" title={activeObject.digitalTwin.profile?.operator}>{activeObject.digitalTwin.profile?.operator || 'COMSAT INC'}</span></div>
+                          </div>
+                        ) : (
+                          <div className="text-slate-500 italic text-[9px] py-1">NON-COOPERATIVE NODE // NO ACTIVE MISSION REGISTRY</div>
+                        )}
+                      </div>
+
+                      {/* 5. Latest Event & Anomalies */}
+                      <div className="bg-slate-950 p-2.5 rounded border border-slate-900/60 space-y-1.5 shadow-inner">
+                        <div className="text-[8px] text-slate-500 uppercase tracking-wider font-bold">5. Latest Event</div>
+                        {activeObject.orbitalEvents ? (
+                          <div className="space-y-2 text-[9px]">
+                            <div className="flex justify-between items-center">
+                              <span>EVENT SEVERITY:</span>
+                              <span className={`font-bold ${
+                                activeObject.orbitalEvents.severity === 'Normal' ? 'text-emerald-400' :
+                                activeObject.orbitalEvents.severity === 'Warning' ? 'text-amber-400' : 'text-rose-400'
+                              }`}>{activeObject.orbitalEvents.severity}</span>
+                            </div>
+                            <div className="text-slate-300 border-t border-slate-900/40 pt-1.5">{activeObject.orbitalEvents.events[0] || 'No events detected'}</div>
+                            <div className="text-slate-400 font-sans leading-relaxed text-[8px]">{activeObject.orbitalEvents.recommendation}</div>
+                          </div>
+                        ) : (
+                          <div className="text-slate-500 italic text-[9px] py-1">STABLE ORBIT DYNAMICS // NO ANOMALIES DETECTED</div>
+                        )}
+                      </div>
+
+                      {/* 6. Risk Status */}
+                      <div className="bg-slate-950 p-2.5 rounded border border-slate-900/60 space-y-1.5 shadow-inner">
+                        <div className="text-[8px] text-slate-500 uppercase tracking-wider font-bold">6. Risk Status</div>
+                        {activeObject.digitalTwin && activeObject.digitalTwin.latestPrediction ? (
+                          <div className="space-y-1.5 text-[9px]">
+                            <div className="flex justify-between"><span>CONJUNCTION RISK:</span><span className="text-rose-400 font-bold">{activeObject.digitalTwin.latestPrediction.riskLevel}</span></div>
+                            <div className="flex justify-between"><span>MIN DISTANCE:</span><span className="text-slate-200 font-bold">{activeObject.digitalTwin.latestPrediction.minimumDistanceKm} km</span></div>
+                            <div className="flex justify-between"><span>COLLISION PROB:</span><span className="text-rose-300 font-bold">{(activeObject.digitalTwin.latestPrediction.collisionProbability * 100).toFixed(5)}%</span></div>
+                          </div>
+                        ) : (
+                          <div className="text-emerald-400/80 font-bold text-[9px] py-1">SAFE // COVARIANCE ENVELOPE SECURED</div>
+                        )}
+                      </div>
+
+                      {/* 7. Telemetry Summary & TLE Lines */}
+                      <div className="bg-slate-950 p-2.5 rounded border border-slate-900/60 space-y-2 shadow-inner">
+                        <div className="text-[8px] text-slate-500 uppercase tracking-wider font-bold">7. Telemetry Summary</div>
+                        {activeObject.tleLine1 && activeObject.tleLine2 ? (
+                          <div className="space-y-1.5">
+                            <div className="text-[8px] text-slate-500 font-bold">NORAD Two-Line Element Set</div>
+                            <pre className="p-1.5 bg-slate-900 border border-slate-800 text-[8px] text-slate-400 rounded overflow-x-auto font-mono leading-tight whitespace-pre">
+                              {activeObject.tleLine1}{'\n'}{activeObject.tleLine2}
+                            </pre>
+                          </div>
+                        ) : (
+                          <div className="text-slate-500 italic text-[9px] py-1">NO TLE RECORD LOADED ON DATABASE</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-slate-500 italic">SELECT CATALOGED OBJECT FOR TELEMETRY LOCK.</div>
+                  )}
+                </section>
+              </div>
+            </div>
+          );
+        })()
+      )}
 
       {/* Manual Creation Modal */}
       {isFormOpen && (
