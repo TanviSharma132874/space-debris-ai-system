@@ -3,12 +3,13 @@ import { classNames } from './classNames';
 
 export default function StatusBadge({
   severity = 'unknown',
+  status,
   children,
   className = '',
   pulse = false,
   ...props
 }) {
-  const normalizedSeverity = normalizeSeverity(severity);
+  const normalizedSeverity = normalizeSeverity(status || severity);
   const meta = getSeverityMeta(normalizedSeverity);
 
   return (

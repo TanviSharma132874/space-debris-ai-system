@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import demoOrbitalObjects from '../data/demoOrbitalObjects';
-import { MissionPanel, SectionHeader, StatusBadge } from '../components/ui';
+import { EmptyState, MissionPanel, SectionHeader, StatusBadge } from '../components/ui';
 
 export default function OrbitalObjects() {
   const [orbitalObjects, setOrbitalObjects] = useState([]);
@@ -98,6 +98,7 @@ export default function OrbitalObjects() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const view = searchParams.get('view');
+  const hasDigitalTwinObject = orbitalObjects.some((obj) => obj.digitalTwin);
 
   // Fetch orbital objects with active filters
   const fetchOrbitalObjects = async (searchParams = {}) => {
@@ -134,11 +135,12 @@ export default function OrbitalObjects() {
   }, [searchText, filterObjectType, filterOrbitType, filterStatus]);
 
   useEffect(() => {
-    if (view === 'twin' && !selectedTwinObject && orbitalObjects.length > 0) {
-      const targetObj = orbitalObjects.find((obj) => obj.digitalTwin) || orbitalObjects[0];
-      if (targetObj) {
-        setSelectedTwinObject(targetObj);
-      }
+    if (view !== 'twin') return;
+
+    const selectedSupportsTwin = Boolean(selectedTwinObject?.digitalTwin);
+    if (!selectedSupportsTwin && orbitalObjects.length > 0) {
+      const targetObj = orbitalObjects.find((obj) => obj.digitalTwin);
+      setSelectedTwinObject(targetObj || null);
     }
   }, [view, orbitalObjects, selectedTwinObject]);
 
@@ -689,6 +691,12 @@ export default function OrbitalObjects() {
             </div>
           </div>
         </section>
+      )}
+
+      {!isLoading && !error && view === 'twin' && !hasDigitalTwinObject && (
+        <div className="my-8 flex justify-center">
+          <EmptyState title="No Digital Twin data available." />
+        </div>
       )}
 
       {demoResult && (
