@@ -10,7 +10,11 @@ export default function MissionPanel({
 }) {
   return (
     <Component
-      className={classNames('mc-panel', padded && 'p-4 sm:p-5', className)}
+      className={classNames(
+        'mc-panel relative overflow-hidden border border-slate-800/90 bg-slate-950/95 shadow-[inset_0_1px_0_rgba(148,163,184,0.08)]',
+        padded && 'p-3 sm:p-4',
+        className,
+      )}
       data-tone={tone}
       {...props}
     >

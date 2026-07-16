@@ -1689,225 +1689,177 @@ export default function OrbitalObjects() {
       )}
 
       {/* Digital Twin Modal */}
-      {selectedTwinObject && selectedTwinObject.digitalTwin && (
-        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-4xl w-full shadow-2xl space-y-6 max-h-[95vh] overflow-y-auto">
-            
-            {/* Header */}
-            <div className="flex justify-between items-start border-b border-slate-800 pb-4">
-              <div>
-                <div className="flex items-center space-x-3">
-                  <h2 className="text-2xl font-black text-slate-100 tracking-tight">Digital Twin Workspace</h2>
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
-                    selectedTwinObject.digitalTwin.missionStatus === 'Healthy' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' :
-                    selectedTwinObject.digitalTwin.missionStatus === 'Monitoring' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/25' :
-                    selectedTwinObject.digitalTwin.missionStatus === 'Warning' ? 'bg-amber-500/10 text-amber-400 border-amber-500/25' :
-                    'bg-rose-500/10 text-rose-400 border-rose-500/25'
-                  }`}>
-                    Mission Status: {selectedTwinObject.digitalTwin.missionStatus}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 font-mono mt-1">Real-time Telemetry & Orbit Simulation Mirror</p>
-              </div>
-              <button
-                type="button"
-                className="text-slate-400 hover:text-slate-200 text-2xl font-bold leading-none"
-                onClick={handleCloseTwin}
-              >
-                &times;
-              </button>
-            </div>
+      {selectedTwinObject && selectedTwinObject.digitalTwin && (() => {
+        const twin = selectedTwinObject.digitalTwin;
+        const profile = twin.profile;
+        const health = twin.health;
+        const events = twin.orbitalEvents?.events || [];
+        const latestEvent = events[0] || 'No active events detected';
+        const currentRisk = twin.latestPrediction?.riskLevel || 'No active prediction';
+        const lastUpdate = new Date().toLocaleString();
+        const activeAlertCount = events.length;
 
-            {/* Layout Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* Column 1: Profile & Health Summary */}
-              <div className="space-y-6 md:col-span-1">
-                {/* Satellite Profile */}
-                <div className="bg-slate-950 p-4 border border-slate-800/80 rounded-lg space-y-3">
-                  <h3 className="text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Satellite Profile</h3>
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Name:</span>
-                      <span className="font-semibold text-slate-200">{selectedTwinObject.digitalTwin.profile.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Catalog #:</span>
-                      <span className="font-mono text-slate-300">{selectedTwinObject.digitalTwin.profile.catalogNumber}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Type:</span>
-                      <span className="text-slate-300">{selectedTwinObject.digitalTwin.profile.objectType}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Orbit Type:</span>
-                      <span className="text-indigo-400 font-semibold">{selectedTwinObject.digitalTwin.profile.orbitType}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Operator:</span>
-                      <span className="text-slate-300 truncate max-w-[120px]" title={selectedTwinObject.digitalTwin.profile.operator}>{selectedTwinObject.digitalTwin.profile.operator}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Altitude:</span>
-                      <span className="text-slate-300 font-semibold">{selectedTwinObject.digitalTwin.profile.altitudeKm} km</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Velocity:</span>
-                      <span className="text-slate-300 font-semibold">{selectedTwinObject.digitalTwin.profile.velocityKmPerSec} km/s</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Health Summary */}
-                <div className="bg-slate-950 p-4 border border-slate-800/80 rounded-lg space-y-3">
-                  <h3 className="text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Health Summary</h3>
-                  <div className="flex items-center justify-between">
+        return (
+          <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 max-w-7xl w-full shadow-2xl space-y-4 max-h-[95vh] overflow-y-auto">
+              <div className="flex items-start gap-3">
+                <MissionPanel className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-3">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-500 uppercase font-medium">Health Score</span>
-                      <p className={`text-2xl font-black ${
-                        selectedTwinObject.digitalTwin.health.healthScore >= 80 ? 'text-emerald-400' :
-                        selectedTwinObject.digitalTwin.health.healthScore >= 50 ? 'text-amber-400' :
-                        'text-rose-400'
-                      }`}>
-                        {selectedTwinObject.digitalTwin.health.healthScore}%
-                      </p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Digital Twin Workspace</p>
+                      <h2 className="text-lg font-black text-slate-100 tracking-tight truncate">{profile.name}</h2>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
-                      selectedTwinObject.digitalTwin.health.operationalStatus === 'Operational' ? 'bg-emerald-500/10 text-emerald-400' :
-                      selectedTwinObject.digitalTwin.health.operationalStatus === 'Degraded' ? 'bg-amber-500/10 text-amber-400' :
-                      'bg-rose-500/10 text-rose-400'
-                    }`}>
-                      {selectedTwinObject.digitalTwin.health.operationalStatus}
-                    </span>
-                  </div>
-                  <div className="space-y-1.5 text-[11px] pt-1">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Fuel Level:</span>
-                      <span className="font-semibold text-slate-300">{selectedTwinObject.digitalTwin.health.fuelLevel}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Battery:</span>
-                      <span className="font-semibold text-slate-300">{selectedTwinObject.digitalTwin.health.batteryStatus}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Comms:</span>
-                      <span className="font-semibold text-slate-300">{selectedTwinObject.digitalTwin.health.communicationStatus}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Thermal:</span>
-                      <span className="font-semibold text-slate-300">{selectedTwinObject.digitalTwin.health.thermalStatus}</span>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-[11px]">
+                      <div>
+                        <p className="text-slate-500 uppercase font-bold">NORAD ID</p>
+                        <p className="font-mono text-slate-200">{profile.catalogNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 uppercase font-bold">Orbit Type</p>
+                        <p className="font-semibold text-slate-200">{profile.orbitType}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 uppercase font-bold">Mission Status</p>
+                        <StatusBadge status={twin.missionStatus}>{twin.missionStatus}</StatusBadge>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 uppercase font-bold">Current Risk</p>
+                        <StatusBadge status={currentRisk}>{currentRisk}</StatusBadge>
+                      </div>
+                      <div>
+                        <p className="text-slate-500 uppercase font-bold">Last Update</p>
+                        <p className="font-mono text-slate-300">{lastUpdate}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </MissionPanel>
+                <button
+                  type="button"
+                  className="text-slate-400 hover:text-slate-200 text-2xl font-bold leading-none px-1"
+                  onClick={handleCloseTwin}
+                >
+                  &times;
+                </button>
               </div>
 
-              {/* Column 2: Events, Predictions & Recommendations */}
-              <div className="space-y-6 md:col-span-1">
-                {/* Active Orbital Events */}
-                <div className="bg-slate-950 p-4 border border-slate-800/80 rounded-lg space-y-3">
-                  <h3 className="text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Active Orbital Events</h3>
-                  {selectedTwinObject.digitalTwin.orbitalEvents.events.length > 0 ? (
-                    <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
-                      {selectedTwinObject.digitalTwin.orbitalEvents.events.map((evt, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-slate-900 px-2 py-1 rounded text-[11px] border border-slate-800">
-                          <span className="text-slate-200 font-medium truncate max-w-[110px]" title={evt}>{evt}</span>
-                          <span className={`text-[9px] px-1.5 rounded font-bold ${
-                            evt === 'Decaying Orbit Risk' ? 'bg-rose-500/10 text-rose-400' :
-                            evt === 'Low Orbit Warning' || evt === 'Velocity Anomaly' ? 'bg-orange-500/10 text-orange-400' :
-                            'bg-amber-500/10 text-amber-400'
-                          }`}>
-                            {evt === 'Decaying Orbit Risk' ? 'Critical' :
-                             evt === 'Low Orbit Warning' || evt === 'Velocity Anomaly' ? 'High' : 'Warning'}
-                          </span>
-                        </div>
-                      ))}
+              <div className="grid grid-cols-1 xl:grid-cols-[20%_1fr_20%] gap-4">
+                <div className="space-y-3">
+                  <MissionPanel className="bg-slate-950 p-3 border border-slate-800/80 rounded-lg space-y-2">
+                    <h3 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Object Summary</h3>
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Name</span><span className="font-semibold text-slate-200 truncate" title={profile.name}>{profile.name}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Type</span><span className="text-slate-300">{profile.objectType}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Operator</span><span className="text-slate-300 truncate" title={profile.operator}>{profile.operator}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Altitude</span><span className="font-semibold text-slate-300">{profile.altitudeKm} km</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Velocity</span><span className="font-semibold text-slate-300">{profile.velocityKmPerSec} km/s</span></div>
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-500 italic py-1">No active events detected.</p>
-                  )}
-                </div>
+                  </MissionPanel>
 
-                {/* Latest Collision Prediction */}
-                <div className="bg-slate-950 p-4 border border-slate-800/80 rounded-lg space-y-3">
-                  <h3 className="text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Collision Prediction</h3>
-                  {selectedTwinObject.digitalTwin.latestPrediction ? (
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Risk Level:</span>
-                        <span className={`font-bold uppercase ${
-                          selectedTwinObject.digitalTwin.latestPrediction.riskLevel === 'Critical' ? 'text-rose-400' :
-                          selectedTwinObject.digitalTwin.latestPrediction.riskLevel === 'High' ? 'text-orange-400' :
-                          selectedTwinObject.digitalTwin.latestPrediction.riskLevel === 'Medium' ? 'text-amber-400' :
-                          'text-emerald-400'
-                        }`}>{selectedTwinObject.digitalTwin.latestPrediction.riskLevel}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Min Distance:</span>
-                        <span className="font-semibold text-slate-300">{selectedTwinObject.digitalTwin.latestPrediction.minimumDistanceKm} km</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Rel Velocity:</span>
-                        <span className="font-semibold text-slate-300">{selectedTwinObject.digitalTwin.latestPrediction.relativeVelocityKmPerSec} km/s</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Probability:</span>
-                        <span className="font-semibold text-slate-300">{(selectedTwinObject.digitalTwin.latestPrediction.collisionProbability * 100).toFixed(4)}%</span>
-                      </div>
+                  <MissionPanel className="bg-slate-950 p-3 border border-slate-800/80 rounded-lg space-y-2">
+                    <h3 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Mission</h3>
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Status</span><StatusBadge status={twin.missionStatus}>{twin.missionStatus}</StatusBadge></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Risk</span><span className="font-bold text-slate-200 uppercase">{currentRisk}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Recommendation</span><span className="text-slate-300 truncate" title={twin.latestRecommendation}>{twin.latestRecommendation}</span></div>
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-500 italic py-1">No collision event records in database.</p>
-                  )}
+                  </MissionPanel>
+
+                  <MissionPanel className="bg-slate-950 p-3 border border-slate-800/80 rounded-lg space-y-2">
+                    <h3 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Telemetry</h3>
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Fuel</span><span className="font-semibold text-slate-300">{health.fuelLevel}%</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Battery</span><span className="font-semibold text-slate-300">{health.batteryStatus}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Comms</span><span className="font-semibold text-slate-300">{health.communicationStatus}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-slate-500">Thermal</span><span className="font-semibold text-slate-300">{health.thermalStatus}</span></div>
+                    </div>
+                  </MissionPanel>
                 </div>
 
-                {/* Latest Recommendation */}
-                <div className="bg-slate-950 p-4 border border-slate-800/80 rounded-lg space-y-2">
-                  <h3 className="text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Decision Recommendation</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                    {selectedTwinObject.digitalTwin.latestRecommendation}
-                  </p>
-                </div>
-              </div>
+                <MissionPanel className="bg-slate-950 border border-slate-800/80 rounded-lg min-h-[520px] flex flex-col">
+                  <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2">
+                    <h3 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Scene3D Container</h3>
+                    <span className="text-[10px] text-slate-500 font-mono">Visualization reserved</span>
+                  </div>
+                  <div className="flex-1 grid place-items-center p-4 text-center">
+                    <div>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Scene3D Mount Area</p>
+                      <p className="text-[11px] text-slate-600 mt-1">No Scene3D invocation exists in this page.</p>
+                    </div>
+                  </div>
+                </MissionPanel>
 
-              {/* Column 3: Latest Trajectory Preview */}
-              <div className="space-y-6 md:col-span-1">
-                <div className="bg-slate-950 p-4 border border-slate-800/80 rounded-lg space-y-3 flex flex-col h-full justify-between">
-                  <div>
-                    <h3 className="text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5 mb-2">Simulated Trajectory (60m)</h3>
-                    {selectedTwinObject.digitalTwin.latestTrajectory.length > 0 ? (
-                      <div className="max-h-[280px] overflow-y-auto divide-y divide-slate-900 border border-slate-900 rounded font-mono text-[10px]">
-                        {selectedTwinObject.digitalTwin.latestTrajectory.map((pt, idx) => (
-                          <div key={idx} className="p-1.5 flex justify-between text-slate-400 hover:bg-slate-900/40">
-                            <span>+{pt.timeOffsetMinutes}m</span>
-                            <span className="text-slate-300">{pt.latitude}°, {pt.longitude}°</span>
+                <div className="space-y-3">
+                  <MissionPanel className="bg-slate-950 p-3 border border-slate-800/80 rounded-lg space-y-2">
+                    <h3 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Health</h3>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-slate-500 uppercase font-bold">Health Score</p>
+                        <p className={`text-xl font-black ${
+                          health.healthScore >= 80 ? 'text-emerald-400' :
+                          health.healthScore >= 50 ? 'text-amber-400' :
+                          'text-rose-400'
+                        }`}>{health.healthScore}%</p>
+                      </div>
+                      <StatusBadge status={health.operationalStatus}>{health.operationalStatus}</StatusBadge>
+                    </div>
+                  </MissionPanel>
+
+                  <MissionPanel className="bg-slate-950 p-3 border border-slate-800/80 rounded-lg space-y-2">
+                    <h3 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Alerts</h3>
+                    {events.length > 0 ? (
+                      <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
+                        {events.map((evt, idx) => (
+                          <div key={idx} className="flex justify-between items-center bg-slate-900 px-2 py-1 rounded text-[11px] border border-slate-800">
+                            <span className="text-slate-200 font-medium truncate" title={evt}>{evt}</span>
+                            <StatusBadge status={evt === 'Decaying Orbit Risk' ? 'Critical' : 'Warning'}>
+                              {evt === 'Decaying Orbit Risk' ? 'Critical' : 'Warning'}
+                            </StatusBadge>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500 italic py-1">No trajectory path simulated.</p>
+                      <p className="text-xs text-slate-500 italic py-1">No active alerts.</p>
                     )}
-                  </div>
-                  <div className="text-[10px] text-slate-600 italic pt-2">
-                    Trajectory mirror is synchronized with current Keplerian altitude: {selectedTwinObject.digitalTwin.profile.altitudeKm} km.
-                  </div>
+                  </MissionPanel>
+
+                  <MissionPanel className="bg-slate-950 p-3 border border-slate-800/80 rounded-lg space-y-2">
+                    <h3 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Latest Event</h3>
+                    <p className="text-xs text-slate-300 font-medium">{latestEvent}</p>
+                    {twin.latestPrediction && (
+                      <div className="space-y-1 text-[11px] pt-1">
+                        <div className="flex justify-between gap-3"><span className="text-slate-500">Min Distance</span><span className="font-semibold text-slate-300">{twin.latestPrediction.minimumDistanceKm} km</span></div>
+                        <div className="flex justify-between gap-3"><span className="text-slate-500">Probability</span><span className="font-semibold text-slate-300">{(twin.latestPrediction.collisionProbability * 100).toFixed(4)}%</span></div>
+                      </div>
+                    )}
+                  </MissionPanel>
+
+                  <MissionPanel className="bg-slate-950 p-3 border border-slate-800/80 rounded-lg space-y-2">
+                    <h3 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1.5">Current Recommendation</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed font-medium">{twin.latestRecommendation}</p>
+                  </MissionPanel>
                 </div>
               </div>
 
-            </div>
-
-            {/* Timestamp & Actions */}
-            <div className="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-800 pt-4">
-              <span>Digital Twin Mirror Epoch: {new Date().toLocaleString()}</span>
-              <button
-                type="button"
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-5 py-2 rounded transition-colors"
-                onClick={handleCloseTwin}
-              >
-                Close Digital Twin
-              </button>
+              <div className="flex flex-col gap-2 border-t border-slate-800 pt-3 text-[10px] text-slate-400 md:flex-row md:items-center md:justify-between">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 flex-1">
+                  <span><span className="text-slate-600 uppercase font-bold">Simulation Status</span> <span className="font-mono text-slate-300">Synchronized</span></span>
+                  <span><span className="text-slate-600 uppercase font-bold">Camera Mode</span> <span className="font-mono text-slate-300">Operator</span></span>
+                  <span><span className="text-slate-600 uppercase font-bold">Tracking Mode</span> <span className="font-mono text-slate-300">{profile.orbitType}</span></span>
+                  <span><span className="text-slate-600 uppercase font-bold">Last Sync</span> <span className="font-mono text-slate-300">{lastUpdate}</span></span>
+                  <span><span className="text-slate-600 uppercase font-bold">Active Alerts</span> <span className="font-mono text-slate-300">{activeAlertCount}</span></span>
+                </div>
+                <button
+                  type="button"
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded transition-colors"
+                  onClick={handleCloseTwin}
+                >
+                  Close Digital Twin
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </main>
   );
 }
