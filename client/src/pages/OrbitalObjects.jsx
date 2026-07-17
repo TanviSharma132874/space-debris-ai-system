@@ -98,7 +98,14 @@ export default function OrbitalObjects() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const view = searchParams.get('view');
-  const hasDigitalTwinObject = orbitalObjects.some((obj) => obj.digitalTwin);
+  const safeOrbitalObjects = Array.isArray(orbitalObjects) ? orbitalObjects : [];
+  const firstDigitalTwinObject = safeOrbitalObjects.find((obj) => obj?.digitalTwin);
+  const twinActiveObject = selectedObject || safeOrbitalObjects[0];
+  const canRenderDigitalTwin = view === 'twin' && Boolean(
+    twinActiveObject &&
+    selectedTwinObject?.digitalTwin &&
+    safeOrbitalObjects.length > 0
+  );
 
   // Fetch orbital objects with active filters
   const fetchOrbitalObjects = async (searchParams = {}) => {
@@ -136,13 +143,8 @@ export default function OrbitalObjects() {
 
   useEffect(() => {
     if (view !== 'twin') return;
-
-    const selectedSupportsTwin = Boolean(selectedTwinObject?.digitalTwin);
-    if (!selectedSupportsTwin && orbitalObjects.length > 0) {
-      const targetObj = orbitalObjects.find((obj) => obj.digitalTwin);
-      setSelectedTwinObject(targetObj || null);
-    }
-  }, [view, orbitalObjects, selectedTwinObject]);
+    setSelectedTwinObject(firstDigitalTwinObject || null);
+  }, [view, firstDigitalTwinObject]);
 
   const handleCloseTwin = () => {
     setSelectedTwinObject(null);
@@ -693,7 +695,7 @@ export default function OrbitalObjects() {
         </section>
       )}
 
-      {!isLoading && !error && view === 'twin' && !hasDigitalTwinObject && (
+      {!isLoading && !error && view === 'twin' && !canRenderDigitalTwin && (
         <div className="my-8 flex justify-center">
           <EmptyState title="No Digital Twin data available." />
         </div>
@@ -710,6 +712,7 @@ export default function OrbitalObjects() {
       {orbitalObjects.length > 0 && (
         (() => {
           const activeObject = selectedObject || orbitalObjects[0];
+          const isSatellite = activeObject?.objectType === 'Satellite';
           return (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column: Table */}
@@ -811,7 +814,10 @@ export default function OrbitalObjects() {
                                 {orbitalObject.digitalTwin && (
                                   <button
                                     type="button"
-                                    onClick={() => setSelectedTwinObject(orbitalObject)}
+                                    onClick={() => {
+                                      setSelectedTwinObject(orbitalObject);
+                                      setSearchParams({ view: 'twin' });
+                                    }}
                                     className="px-1.5 py-0.5 bg-cyan-950/20 border border-cyan-500/20 hover:border-cyan-400 text-cyan-300 text-[8px] font-bold rounded transition-all"
                                   >
                                     TWN
@@ -1697,10 +1703,10 @@ export default function OrbitalObjects() {
       )}
 
       {/* Digital Twin Modal */}
-      {selectedTwinObject && selectedTwinObject.digitalTwin && (() => {
-        const twin = selectedTwinObject.digitalTwin;
-        const profile = twin.profile;
-        const health = twin.health;
+      {canRenderDigitalTwin && (() => {
+        const twin = selectedTwinObject?.digitalTwin;
+        const profile = twin?.profile || {};
+        const health = twin?.health || {};
         const events = twin.orbitalEvents?.events || [];
         const latestEvent = events[0] || 'No active events detected';
         const currentRisk = twin.latestPrediction?.riskLevel || 'No active prediction';
