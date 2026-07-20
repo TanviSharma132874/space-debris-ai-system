@@ -1336,6 +1336,8 @@ export default function CollisionPrediction() {
               </MissionPanel>
             </aside>
           </div>
+        </>
+      )}
 
       {exportedReport && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -1348,8 +1350,81 @@ export default function CollisionPrediction() {
               &times;
             </button>
             <h2 className="text-xl font-bold text-slate-100 mb-4">Collision Prediction Report</h2>
-            <div className="text-slate-300 text-sm space-y-4 font-mono whitespace-pre-wrap bg-slate-950 p-4 rounded-lg border border-slate-800 max-h-[60vh] overflow-y-auto">
-              {JSON.stringify(exportedReport, null, 2)}
+            <div className="text-slate-300 text-[10px] space-y-2.5 font-mono bg-slate-950 p-4 rounded-lg border border-slate-800 max-h-[60vh] overflow-y-auto" id="report-modal-content">
+              <style>{`@media print{body *{visibility:hidden;}#report-modal-content,#report-modal-content *{visibility:visible;}#report-modal-content{position:absolute;left:0;top:0;width:100%;background:#0b0f19!important;color:#fff!important;}.no-print-btn{display:none!important;}}`}</style>
+              <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                <div>
+                  <div className="text-xs text-cyan-300 uppercase tracking-widest font-bold">Report ID: {(exportedReport._id || exportedReport.id || 'N/A').slice(-8)}</div>
+                  <div className="text-[8px] text-slate-500">Generated: {formatDateTime(exportedReport.createdAt || exportedReport.generatedAt)}</div>
+                </div>
+                <StatusBadge severity={severityForRisk[exportedReport.riskLevel] || 'unknown'}>{exportedReport.riskLevel || 'Unknown'}</StatusBadge>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-slate-500">Operator:</span> Console Operator</div>
+                <div><span className="text-slate-500">Mission:</span> {exportedReport.missionImpact?.missionCategory || 'General'}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 border-t border-slate-800 pt-2">
+                <div>
+                  <span className="text-[8px] text-cyan-400 uppercase font-bold block">Primary Object</span>
+                  <div className="font-bold text-slate-200">{exportedReport.primaryObject?.name || 'Unknown'}</div>
+                  <div className="text-[8px] text-slate-500 font-mono">NORAD: {exportedReport.primaryObject?.catalogNumber || 'N/A'}</div>
+                </div>
+                <div>
+                  <span className="text-[8px] text-orange-400 uppercase font-bold block">Secondary Object</span>
+                  <div className="font-bold text-slate-200">{exportedReport.secondaryObject?.name || 'Unknown'}</div>
+                  <div className="text-[8px] text-slate-500 font-mono">NORAD: {exportedReport.secondaryObject?.catalogNumber || 'N/A'}</div>
+                </div>
+              </div>
+              <MissionPanel aria-label="Prediction Summary">
+                <SectionHeader kicker="Telemetry Summary" title="Prediction Summary" />
+                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1.5">
+                  <div>Risk: <span className="font-bold">{exportedReport.riskLevel}</span></div>
+                  <div>Probability: <span className="font-mono">{formatPercent(exportedReport.collisionProbability ?? exportedReport.probability, 4)}</span></div>
+                  <div>Miss Distance: <span className="font-mono">{formatNumber(exportedReport.minimumDistanceKm ?? exportedReport.missDistanceKm, 3)} km</span></div>
+                  <div>Rel Velocity: <span className="font-mono">{formatNumber(exportedReport.relativeVelocity ?? exportedReport.relativeVelocityKmPerSec, 3)} km/s</span></div>
+                  <div className="col-span-2 text-[9px]">TCA: <span className="font-mono">{formatDateTime(exportedReport.timeOfClosestApproach || exportedReport.predictedTime)}</span></div>
+                  <div>Confidence: <span className="font-mono">{formatPercent(exportedReport.confidence?.confidenceScore ?? exportedReport.confidence, 2)}</span></div>
+                </div>
+              </MissionPanel>
+              <div className="grid grid-cols-2 gap-3 border-t border-slate-800 pt-2">
+                <div>
+                  <span className="text-[8px] text-slate-500 uppercase font-bold block">Recommendation</span>
+                  <div className="text-indigo-300 font-semibold">{exportedReport.recommendation || 'Continuous tracking advised.'}</div>
+                </div>
+                <div>
+                  <span className="text-[8px] text-slate-500 uppercase font-bold block">Mission Impact</span>
+                  <div className="text-slate-350">{exportedReport.missionImpact?.missionCategory} / {exportedReport.missionImpact?.impactLevel}</div>
+                  <p className="text-[8px] text-slate-400 leading-tight">{exportedReport.missionImpact?.impactDescription}</p>
+                </div>
+              </div>
+              <div className="border-t border-slate-800 pt-2 flex gap-4 text-[10px]">
+                <div>Validation: <span className={exportedReport.validation?.isValid ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>{exportedReport.validation?.isValid ? 'VALID' : 'INVALID'}</span></div>
+                <div>Quality: <span className="text-slate-300 font-bold">{exportedReport.validation?.qualityLevel || 'Optimal'}</span></div>
+              </div>
+              <div className="no-print-btn flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button type="button" onClick={() => window.print()} className="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] px-2 py-0.5 rounded">Print</button>
+                <button type="button" onClick={() => window.print()} className="bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] px-2 py-0.5 rounded">Download PDF</button>
+                <button type="button" onClick={() => {
+                  const data = [
+                    ["Attribute", "Value"],
+                    ["Report ID", exportedReport._id || exportedReport.id || 'N/A'],
+                    ["Generated Time", exportedReport.createdAt || new Date().toISOString()],
+                    ["Primary Object", exportedReport.primaryObject?.name || 'Unknown'],
+                    ["Secondary Object", exportedReport.secondaryObject?.name || 'Unknown'],
+                    ["Risk Level", exportedReport.riskLevel || 'Unknown'],
+                    ["Probability", exportedReport.collisionProbability ?? 'N/A'],
+                    ["Relative Velocity", exportedReport.relativeVelocity ?? 'N/A'],
+                    ["Minimum Distance", exportedReport.minimumDistanceKm ?? 'N/A'],
+                    ["Recommendation", exportedReport.recommendation ?? 'N/A']
+                  ];
+                  const csv = data.map(r => r.join(',')).join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                  const link = document.createElement("a");
+                  link.href = URL.createObjectURL(blob);
+                  link.setAttribute("download", `report_${exportedReport._id || 'conjunction'}.csv`);
+                  link.click();
+                }} className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[9px] px-2 py-0.5 rounded">Download CSV</button>
+              </div>
             </div>
             <div className="flex justify-end mt-4">
               <button
@@ -1401,8 +1476,6 @@ export default function CollisionPrediction() {
             </div>
           </form>
         </div>
-      )}
-        </>
       )}
     </main>
   );

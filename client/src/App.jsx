@@ -8,6 +8,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import MissionOverview from './pages/MissionOverview';
 import OrbitalObjects from './pages/OrbitalObjects';
+import SpaceEnginePreview from './pages/SpaceEnginePreview';
 
 function App() {
   const { token } = useAuth();
@@ -54,6 +55,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/space-preview" element={<SpaceEnginePreview />} />
         <Route path="*" element={<Navigate to={token ? '/dashboard' : '/'} replace />} />
       </Routes>
     </BrowserRouter>
