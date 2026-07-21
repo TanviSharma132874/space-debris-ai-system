@@ -1,6 +1,8 @@
 import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
+
+const EARTH_TEXTURE_URL = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
 
 /**
  * EarthRenderer renders the Earth sphere and its outer atmospheric shell.
@@ -8,16 +10,13 @@ import * as THREE from 'three';
  */
 export default function EarthRenderer() {
   const earthRef = useRef();
+  const texture = useLoader(THREE.TextureLoader, EARTH_TEXTURE_URL);
 
   useFrame((state, delta) => {
     if (earthRef.current) {
       earthRef.current.rotation.y += delta * 0.05;
     }
   });
-
-  const texture = new THREE.TextureLoader().load(
-    'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'
-  );
 
   return (
     <group>

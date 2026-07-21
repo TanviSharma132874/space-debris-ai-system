@@ -14,11 +14,11 @@ import GroundStationRenderer from './renderers/GroundStationRenderer';
  * SceneComposer coordinates the different rendering layers of the Space Engine
  * within a single unified React Three Fiber Canvas stack with camera controls.
  */
-export default function SceneComposer() {
+export default function SceneComposer({ visualizationData = [] }) {
   const cameraCtrl = useMemo(() => new CameraController(), []);
   const { orbitPoints, satellites, groundStations } = useMemo(
-    () => DataAdapter.transform(),
-    []
+    () => DataAdapter.transform(visualizationData),
+    [visualizationData]
   );
 
   return (
