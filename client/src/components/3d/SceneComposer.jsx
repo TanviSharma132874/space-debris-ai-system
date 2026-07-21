@@ -3,23 +3,12 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { SpaceEngineProvider } from './engine/SpaceEngineContext';
 import { CameraController } from './controls/CameraController';
+import { DataAdapter } from './adapters/DataAdapter';
 import EarthRenderer from './renderers/EarthRenderer';
 import StarsRenderer from './renderers/StarsRenderer';
 import OrbitRenderer from './renderers/OrbitRenderer';
 import SatelliteRenderer from './renderers/SatelliteRenderer';
 import GroundStationRenderer from './renderers/GroundStationRenderer';
-
-// Placeholder data vectors
-const placeholderOrbits = [
-  [-2, 0, 0], [0, 2, 0], [2, 0, 0], [0, -2, 0], [-2, 0, 0]
-];
-const placeholderSatellites = [
-  { id: 'sat-1', position: [1.6, 0.5, 0.5] },
-  { id: 'sat-2', position: [-1.2, -1.0, 0.8] }
-];
-const placeholderStations = [
-  { id: 'station-1', position: [0, 1.5, 0] }
-];
 
 /**
  * SceneComposer coordinates the different rendering layers of the Space Engine
@@ -27,12 +16,16 @@ const placeholderStations = [
  */
 export default function SceneComposer() {
   const cameraCtrl = useMemo(() => new CameraController(), []);
+  const { orbitPoints, satellites, groundStations } = useMemo(
+    () => DataAdapter.transform(),
+    []
+  );
 
   return (
     <SpaceEngineProvider>
       <div style={{ width: '100%', height: '100%', minHeight: '500px', background: '#020208' }}>
         <Canvas camera={{ position: cameraCtrl.defaultPosition, fov: 60 }}>
-          {/* Camera Orbit Controls */}
+          {/* Reusable Camera Orbit Controls */}
           <OrbitControls 
             enablePan={false}
             enableZoom={true}
@@ -52,13 +45,13 @@ export default function SceneComposer() {
           <EarthRenderer />
 
           {/* Orbit path trails */}
-          <OrbitRenderer orbitPoints={placeholderOrbits} color="#22d3ee" />
+          <OrbitRenderer orbitPoints={orbitPoints} color="#22d3ee" />
 
           {/* Satellite indicators */}
-          <SatelliteRenderer satellites={placeholderSatellites} selectedId={null} />
+          <SatelliteRenderer satellites={satellites} selectedId={null} />
 
           {/* Surface tracking stations */}
-          <GroundStationRenderer groundStations={placeholderStations} selectedStationId={null} />
+          <GroundStationRenderer groundStations={groundStations} selectedStationId={null} />
         </Canvas>
       </div>
     </SpaceEngineProvider>
