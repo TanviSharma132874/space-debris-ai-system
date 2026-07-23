@@ -3,7 +3,7 @@ services:
     build:
       context: ./client
     ports:
-      - "5173:80"
+      - "5174:80"
     depends_on:
       server:
         condition: service_healthy

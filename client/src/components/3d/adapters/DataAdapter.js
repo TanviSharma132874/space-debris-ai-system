@@ -22,15 +22,30 @@ export class DataAdapter {
 
     const nodes = prepareVisualizationData({ orbitalObjects: rawObjects });
 
-    const orbitPoints = nodes.map((node) => node.position).filter(Boolean);
+    const scaleFactor = 2.2;
     const satellites = nodes
       .filter((node) => node.objectType !== 'GroundStation')
-      .map((node) => ({ id: node.id || node.catalogNumber, position: node.position }));
+      .map((node) => {
+        const [x = 0, y = 0, z = 0] = node.position || [0, 0, 0];
+        return {
+          id: node.id || node.catalogNumber,
+          position: [x * scaleFactor, y * scaleFactor, z * scaleFactor],
+        };
+      });
+
     const groundStations = nodes
       .filter((node) => node.objectType === 'GroundStation')
-      .map((node) => ({ id: node.id || node.catalogNumber, position: node.position }));
+      .map((node) => {
+        const [x = 0, y = 0, z = 0] = node.position || [0, 0, 0];
+        const mag = Math.sqrt(x * x + y * y + z * z);
+        const factor = mag > 0 ? 1.5 / mag : 1.5;
+        return {
+          id: node.id || node.catalogNumber,
+          position: [x * factor, y * factor, z * factor],
+        };
+      });
 
-    return { orbitPoints, satellites, groundStations };
+    return { orbitPoints: [], satellites, groundStations };
   }
 }
 
